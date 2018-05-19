@@ -1,7 +1,7 @@
-object Form77: TForm77
+object frmMultiBuilderMain: TfrmMultiBuilderMain
   Left = 0
   Top = 0
-  Caption = 'Form77'
+  Caption = 'MultiBuilder'
   ClientHeight = 632
   ClientWidth = 833
   StyleBook = StyleBook1
@@ -13,19 +13,40 @@ object Form77: TForm77
   object Toolbar: TPanel
     Align = Top
     Size.Width = 833.000000000000000000
-    Size.Height = 121.000000000000000000
+    Size.Height = 97.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 1
     object tbConfigureEnvironment: TButton
       Position.X = 8.000000000000000000
       Position.Y = 11.000000000000000000
       Size.Width = 97.000000000000000000
-      Size.Height = 97.000000000000000000
+      Size.Height = 78.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 0
+      TabOrder = 2
       Text = 'Configure Environment'
       TextSettings.WordWrap = True
       OnClick = tbConfigureEnvironmentClick
+    end
+    object tbLoadProject: TButton
+      Position.X = 152.000000000000000000
+      Position.Y = 11.000000000000000000
+      Size.Width = 97.000000000000000000
+      Size.Height = 78.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
+      Text = 'Load Project'
+      TextSettings.WordWrap = True
+      OnClick = tbLoadProjectClick
+    end
+    object tbEditProject: TButton
+      Position.X = 264.000000000000000000
+      Position.Y = 11.000000000000000000
+      Size.Width = 97.000000000000000000
+      Size.Height = 78.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Text = 'Edit Project'
+      TextSettings.WordWrap = True
     end
   end
   object StyleBook1: TStyleBook
@@ -3132,5 +3153,31 @@ object Form77: TForm77
       end>
     Left = 736
     Top = 544
+  end
+  object lbEnvironments: TListBox
+    Align = Left
+    Position.Y = 97.000000000000000000
+    Size.Width = 153.000000000000000000
+    Size.Height = 535.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 3
+    DisableFocusEffect = True
+    DefaultItemStyles.ItemStyle = ''
+    DefaultItemStyles.GroupHeaderStyle = ''
+    DefaultItemStyles.GroupFooterStyle = ''
+    Viewport.Width = 149.000000000000000000
+    Viewport.Height = 531.000000000000000000
+  end
+  object OpenProject: TOpenDialog
+    Filter = 'MultiBuilder project file|*$(mbproj)|Any file|*.*'
+    Options = [ofHideReadOnly, ofFileMustExist, ofEnableSizing]
+    Left = 176
+    Top = 112
+  end
+  object SaveProject: TSaveDialog
+    Filter = 'MultiBuilder project file|*$(mbproj)|Any file|*.*'
+    Options = [ofOverwritePrompt, ofHideReadOnly, ofPathMustExist, ofEnableSizing]
+    Left = 240
+    Top = 112
   end
 end

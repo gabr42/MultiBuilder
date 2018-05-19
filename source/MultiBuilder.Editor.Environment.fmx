@@ -1,0 +1,50 @@
+object frmEditEnvironment: TfrmEditEnvironment
+  Left = 0
+  Top = 0
+  Caption = 'Form1'
+  ClientHeight = 480
+  ClientWidth = 640
+  StyleBook = frmMultiBuilderMain.StyleBook1
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  DesignerMasterStyle = 0
+  object btnSave: TButton
+    Default = True
+    ModalResult = 1
+    Position.X = 144.000000000000000000
+    Position.Y = 416.000000000000000000
+    Size.Width = 153.000000000000000000
+    Size.Height = 33.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    Text = 'Save'
+  end
+  object btnDiscard: TButton
+    Cancel = True
+    ModalResult = 2
+    Position.X = 344.000000000000000000
+    Position.Y = 416.000000000000000000
+    Size.Width = 153.000000000000000000
+    Size.Height = 33.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 2
+    Text = 'Discard'
+  end
+  object inpEnvironment: TMemo
+    Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+    DataDetectorTypes = []
+    Align = Top
+    Margins.Left = 2.000000000000000000
+    Margins.Top = 2.000000000000000000
+    Margins.Right = 2.000000000000000000
+    Position.X = 2.000000000000000000
+    Position.Y = 2.000000000000000000
+    Size.Width = 636.000000000000000000
+    Size.Height = 383.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    Viewport.Width = 632.000000000000000000
+    Viewport.Height = 379.000000000000000000
+  end
+end
