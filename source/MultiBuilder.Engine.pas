@@ -12,7 +12,8 @@ implementation
 uses
 Windows,
   System.SysUtils, System.StrUtils, System.Classes, System.IniFiles,
-  System.Generics.Defaults, System.Generics.Collections;
+  System.Generics.Defaults, System.Generics.Collections,
+  System.Threading;
 
 type
   TMultiBuilderEngine = class(TInterfacedObject, IMultiBuilderEngine)
@@ -28,21 +29,30 @@ type
       WorkDir : string;
       Commands: TArray<string>;
       procedure Append(const values: TStringList);
+      function Execute: TExecuteResult;
     end;
   var
-    FEnvironments: TArray<string>;
-    FProject     : TMemIniFile;
-    FSections    : TStringList;
-    FVariables   : TEnvVarTable;
-    procedure Run;
+    FCountRunners  : integer;
+    FEnvironments  : TArray<string>;
+    FOnJobDone     : TJobDoneEvent;
+    FOnRunCompleted: TRunCompletedEvent;
+    FProject       : TMemIniFile;
+    FSections      : TStringList;
+    FVariables     : TEnvVarTable;
   strict protected
-    function EvaluateMacro(const environment, name: string): string;
+    function  EvaluateMacro(const environment, name: string): string;
+    function  GetOnJobDone: TJobDoneEvent;
+    function  GetOnRunCompleted: TRunCompletedEvent;
     procedure LoadFromIni(memIni: TMemIniFile);
     procedure PrepareProjectConfig(const environment: string; var projectConfig:
       TProjectConfig);
+    procedure Run;
     procedure ReplaceMacros(const environment: string; values: TStringList); overload;
     function  ReplaceMacros(const environment, value: string): string; overload;
-    procedure StartRunner(const projectConfig: TProjectConfig);
+    procedure JobDone(const environment: string; const result: TExecuteResult);
+    procedure SetOnJobDone(const Value: TJobDoneEvent);
+    procedure SetOnRunCompleted(const Value: TRunCompletedEvent);
+    procedure StartRunner(const environment: string; const projectConfig: TProjectConfig);
   protected
     class function Split(const kv: string; var key, value: string): boolean;
   public
@@ -52,6 +62,8 @@ type
     function Environments: TArray<string>;
     function LoadFrom(const iniFile: string): boolean;
     function LoadProject(const projFile: string): boolean;
+    property OnJobDone: TJobDoneEvent read GetOnJobDone write SetOnJobDone;
+    property OnRunCompleted: TRunCompletedEvent read GetOnRunCompleted write SetOnRunCompleted;
   end;
 
 { exports }
@@ -94,6 +106,26 @@ begin
            and (not FVariables.TryGetValue(CGlobalSectionName + '/' + name, Result))
   then
     Result := '';
+end;
+
+function TMultiBuilderEngine.GetOnJobDone: TJobDoneEvent;
+begin
+  Result := FOnJobDone;
+end;
+
+function TMultiBuilderEngine.GetOnRunCompleted: TRunCompletedEvent;
+begin
+  Result := FOnRunCompleted;
+end;
+
+procedure TMultiBuilderEngine.JobDone(const environment: string;
+  const result: TExecuteResult);
+begin
+  if assigned(OnJobDone) then
+    OnJobDone(environment, result);
+  Dec(FCountRunners);
+  if (FCountRunners = 0) and assigned(OnRunCompleted) then
+    OnRunCompleted;
 end;
 
 function TMultiBuilderEngine.LoadFrom(const iniFile: string): boolean;
@@ -224,10 +256,22 @@ begin
   if not assigned(FProject) then
     Exit;
 
+  FCountRunners := Length(FEnvironments);
+
   for sEnv in FEnvironments do begin
     PrepareProjectConfig(sEnv, projConfig);
-    StartRunner(projConfig);
+    StartRunner(sEnv, projConfig);
   end;
+end;
+
+procedure TMultiBuilderEngine.SetOnJobDone(const Value: TJobDoneEvent);
+begin
+  FOnJobDone := Value;
+end;
+
+procedure TMultiBuilderEngine.SetOnRunCompleted(const Value: TRunCompletedEvent);
+begin
+  FOnRunCompleted := Value;
 end;
 
 class function TMultiBuilderEngine.Split(const kv: string; var key, value: string):
@@ -244,12 +288,25 @@ begin
   end;
 end;
 
-procedure TMultiBuilderEngine.StartRunner(const projectConfig: TProjectConfig);
+procedure TMultiBuilderEngine.StartRunner(const environment: string; const projectConfig: TProjectConfig);
 var
+  future      : IFuture<TExecuteResult>;
   threadConfig: TProjectConfig;
 begin
-  // TODO -cMM: TMultiBuilderEngine.StartRunner default body inserted
   threadConfig := projectConfig;
+  future := TFuture<TExecuteResult>.Create(TObject(nil), TFunctionEvent<TExecuteResult>(nil),
+    function: TExecuteResult
+    begin
+      Result := threadConfig.Execute;
+      TThread.Queue(nil,
+        procedure
+        begin
+          JobDone(environment, future.Value);
+          future := nil;
+        end);
+    end,
+    TThreadPool.Default);
+  future.Start;
 end;
 
 procedure TMultiBuilderEngine.TProjectConfig.Append(const values: TStringList);
@@ -269,6 +326,12 @@ begin
       Commands[High(Commands)] := value;
     end;
   end;
+end;
+
+function TMultiBuilderEngine.TProjectConfig.Execute: TExecuteResult;
+begin
+  Result := TExecuteResult.Create(0, '');
+  Sleep(5000);
 end;
 
 end.

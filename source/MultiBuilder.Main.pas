@@ -4,9 +4,10 @@ interface
 
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
+  System.Generics.Defaults, System.Generics.Collections,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs,
   FMX.Controls.Presentation, FMX.StdCtrls, FMX.Layouts, FMX.ListBox,
-  MultiBuilder.Engine.Intf;
+  MultiBuilder.Engine.Intf, System.Actions, FMX.ActnList;
 
 type
   TfrmMultiBuilderMain = class(TForm)
@@ -19,19 +20,28 @@ type
     OpenProject: TOpenDialog;
     SaveProject: TSaveDialog;
     tbRun: TButton;
+    ActionList1: TActionList;
+    actRun: TAction;
+    procedure actRunExecute(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure tbConfigureEnvironmentClick(Sender: TObject);
     procedure tbEditProjectClick(Sender: TObject);
     procedure tbLoadProjectClick(Sender: TObject);
-    procedure tbRunClick(Sender: TObject);
   private
     FEngine: IMultiBuilderEngine;
     FEngineConfig: string;
     FProjectFile: string;
+    FResults: TDictionary<string, TExecuteResult>;
     procedure ParseCommandLine;
     procedure RecreateEnvironment;
     procedure ReloadEngine;
     procedure ReloadProject;
+  strict protected
+    function CleanEnvironment(const environment: string): string;
+    function FindEnvironment(const environment: string): integer;
+    procedure MarkEnvironment(const environment: string);
+    procedure MarkJobDone(const environment: string; const result: TExecuteResult);
   public
   end;
 
@@ -48,6 +58,37 @@ uses
 
 {$R *.fmx}
 
+procedure TfrmMultiBuilderMain.actRunExecute(Sender: TObject);
+var
+  sEnv: string;
+begin
+  FResults.Clear;
+  for sEnv in FEngine.Environments do
+    MarkEnvironment(sEnv);
+
+  FEngine.Run;
+end;
+
+function TfrmMultiBuilderMain.CleanEnvironment(const environment: string): string;
+begin
+  Result := environment;
+  if (Result <> '') and ((Result[1] = #$2611) or (Result[1] = #$2612)) then
+    Delete(Result, 1, 2);
+end;
+
+function TfrmMultiBuilderMain.FindEnvironment(const environment: string): integer;
+begin
+  for Result := 0 to lbEnvironments.Count - 1 do
+    if SameText(CleanEnvironment(lbEnvironments.Items[Result]), environment) then
+      Exit;
+  Result := -1;
+end;
+
+procedure TfrmMultiBuilderMain.FormDestroy(Sender: TObject);
+begin
+  FreeAndNil(FResults);
+end;
+
 procedure TfrmMultiBuilderMain.FormCreate(Sender: TObject);
 begin
   OpenProject.Filter := StringReplace(OpenProject.Filter,
@@ -55,11 +96,42 @@ begin
                           [rfReplaceAll]);
   SaveProject.Filter := OpenProject.Filter;
 
+  FResults := TDictionary<string, TExecuteResult>.Create(TIStringComparer.Ordinal);
   FEngine := CreateMultiBUilderEngine;
+  FEngine.OnJobDone :=
+    procedure (const environment: string; const result: TExecuteResult)
+    begin
+      MarkJobDone(environment, result);
+    end;
+
   FEngineConfig := MBPlatform.EnvConfigName;
   ReloadEngine;
 
   ParseCommandLine;
+end;
+
+procedure TfrmMultiBuilderMain.MarkEnvironment(const environment: string);
+var
+  idx   : integer;
+  result: TExecuteResult;
+begin
+  idx := FindEnvironment(environment);
+  if idx < 0 then
+    Exit;
+
+  if not FResults.TryGetValue(environment, result) then
+    lbEnvironments.Items[idx] := environment
+  else if result.Key = 0 then
+    lbEnvironments.Items[idx] := #$2611 + ' ' + environment
+  else
+    lbEnvironments.Items[idx] := #$2612 + ' ' + environment;
+end;
+
+procedure TfrmMultiBuilderMain.MarkJobDone(const environment: string;
+  const result: TExecuteResult);
+begin
+  FResults.AddOrSetValue(environment, result);
+  MarkEnvironment(environment);
 end;
 
 procedure TfrmMultiBuilderMain.ParseCommandLine;
@@ -181,11 +253,6 @@ begin
     FProjectFile := OpenProject.FileName;
     ReloadProject;
   end;
-end;
-
-procedure TfrmMultiBuilderMain.tbRunClick(Sender: TObject);
-begin
-  FEngine.Run;
 end;
 
 end.

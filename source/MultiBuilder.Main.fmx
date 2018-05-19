@@ -9,6 +9,7 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
   FormFactor.Height = 480
   FormFactor.Devices = [Desktop]
   OnCreate = FormCreate
+  OnDestroy = FormDestroy
   DesignerMasterStyle = 0
   object Toolbar: TPanel
     Align = Top
@@ -50,16 +51,19 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
       OnClick = tbEditProjectClick
     end
     object tbRun: TButton
+      Action = actRun
       Default = True
+      Enabled = True
+      ImageIndex = -1
       Position.X = 408.000000000000000000
       Position.Y = 11.000000000000000000
       Size.Width = 97.000000000000000000
       Size.Height = 78.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 3
-      Text = 'Run'
       TextSettings.WordWrap = True
-      OnClick = tbRunClick
+      ParentShowHint = False
+      ShowHint = True
     end
   end
   object StyleBook1: TStyleBook
@@ -3192,5 +3196,15 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
     Options = [ofOverwritePrompt, ofHideReadOnly, ofPathMustExist, ofEnableSizing]
     Left = 240
     Top = 112
+  end
+  object ActionList1: TActionList
+    Left = 400
+    Top = 304
+    object actRun: TAction
+      Text = 'Run'
+      Hint = 'Run'
+      ShortCut = 120
+      OnExecute = actRunExecute
+    end
   end
 end
