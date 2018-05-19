@@ -105,7 +105,7 @@
         <DCC_RemoteDebug>false</DCC_RemoteDebug>
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
         <AppEnableHighDPI>true</AppEnableHighDPI>
-        <Debugger_RunParams>h:\RAZVOJ\OmniThreadLIbrary-v4\unittests\SmokeTest.mbproj </Debugger_RunParams>
+        <Debugger_RunParams>h:\RAZVOJ\OmniThreadLibrary-v4\unittests\SmokeTest.mbenv  h:\RAZVOJ\OmniThreadLIbrary-v4\unittests\SmokeTest.mbproj </Debugger_RunParams>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>

@@ -8,6 +8,7 @@ type
     function Environments: TArray<string>;
     function LoadFrom(const iniFile: string): boolean;
     function LoadProject(const projFile: string): boolean;
+    procedure Run;
   end;
 
 implementation

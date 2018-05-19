@@ -18,10 +18,12 @@ type
     tbEditProject: TButton;
     OpenProject: TOpenDialog;
     SaveProject: TSaveDialog;
+    tbRun: TButton;
     procedure FormCreate(Sender: TObject);
     procedure tbConfigureEnvironmentClick(Sender: TObject);
     procedure tbEditProjectClick(Sender: TObject);
     procedure tbLoadProjectClick(Sender: TObject);
+    procedure tbRunClick(Sender: TObject);
   private
     FEngine: IMultiBuilderEngine;
     FEngineConfig: string;
@@ -181,14 +183,18 @@ begin
   end;
 end;
 
+procedure TfrmMultiBuilderMain.tbRunClick(Sender: TObject);
+begin
+  FEngine.Run;
+end;
+
 end.
 
 // Environment:
 
 //[Global]
 //Scratch=c:\0\MultiBuilder\$(EnvironmentName)
-//ForceDir=$(Scratch)\exe;$(Scratch)\dcu;$(Scratch)\log
-//Output=$(Scratch)\log\$(EnvironmentName)
+//ForceDir=$(Scratch)\exe;$(Scratch)\dcu
 //
 //[Delphi 2007]
 //Path=d:\Delphi\5.0
@@ -196,7 +202,7 @@ end.
 // Project:
 
 //[Global]
-// Root=h:\razvoj\omnithreadlibrary-v4\unittests
+// Folder=h:\razvoj\omnithreadlibrary-v4\unittests
 // Cmd=$(Path)\dcc32 CompileAllUnits -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e$(Scratch)\exe -n0$(Scratch)\dcu\win32 -dCONSOLE_TESTRUNNER
 // Cmd=$(Path)\dcc32 TestRunner -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e$(Scratch)\exe -n0$(Scratch)\dcu\win32 -dCONSOLE_TESTRUNNER
 // Cmd=$(Scratch)\exe\TestRunner
