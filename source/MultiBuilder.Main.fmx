@@ -47,6 +47,7 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
       TabOrder = 0
       Text = 'Edit Project'
       TextSettings.WordWrap = True
+      OnClick = tbEditProjectClick
     end
   end
   object StyleBook1: TStyleBook

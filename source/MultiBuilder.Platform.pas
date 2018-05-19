@@ -4,8 +4,9 @@ interface
 
 type
   MBPlatform = class
-    const EnvConfigFile = 'multibuilder.mbenv';
+    const EnvConfigExt = '.mbenv';
     const ProjConfigExt = '.mbproj';
+    const EnvConfigFile = 'multibuilder' + EnvConfigExt;
     class function EnvConfigName: string;
   end;
 

@@ -3,11 +3,12 @@ program MultiBuilder;
 uses
   System.StartUpCopy,
   FMX.Forms,
-  MultiBuilder.Main in 'MultiBuilder.Main.pas' {frmMultiBuilderMain},
   MultiBuilder.Platform in 'MultiBuilder.Platform.pas',
-  MultiBuilder.Editor.Environment in 'MultiBuilder.Editor.Environment.pas' {frmEditEnvironment},
   MultiBuilder.Engine in 'MultiBuilder.Engine.pas',
-  MultiBuilder.Engine.Intf in 'MultiBuilder.Engine.Intf.pas';
+  MultiBuilder.Engine.Intf in 'MultiBuilder.Engine.Intf.pas',
+  MultiBuilder.Main in 'MultiBuilder.Main.pas' {frmMultiBuilderMain},
+  MultiBuilder.Editor.Environment in 'MultiBuilder.Editor.Environment.pas' {frmEditEnvironment},
+  MultiBuilder.Editor.Project in 'MultiBuilder.Editor.Project.pas' {frmEditProject};
 
 {$R *.res}
 

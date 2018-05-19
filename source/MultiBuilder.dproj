@@ -105,6 +105,7 @@
         <DCC_RemoteDebug>false</DCC_RemoteDebug>
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
         <AppEnableHighDPI>true</AppEnableHighDPI>
+        <Debugger_RunParams>h:\RAZVOJ\OmniThreadLIbrary-v4\unittests\SmokeTest.mbproj </Debugger_RunParams>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
@@ -128,17 +129,18 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="MultiBuilder.Main.pas">
-            <Form>frmMultiBuilderMain</Form>
-            <FormType>fmx</FormType>
-        </DCCReference>
         <DCCReference Include="MultiBuilder.Platform.pas"/>
-        <DCCReference Include="MultiBuilder.Editor.Environment.pas">
-            <Form>frmEditEnvironment</Form>
-            <FormType>fmx</FormType>
-        </DCCReference>
         <DCCReference Include="MultiBuilder.Engine.pas"/>
         <DCCReference Include="MultiBuilder.Engine.Intf.pas"/>
+        <DCCReference Include="MultiBuilder.Main.pas">
+            <Form>frmMultiBuilderMain</Form>
+        </DCCReference>
+        <DCCReference Include="MultiBuilder.Editor.Environment.pas">
+            <Form>frmEditEnvironment</Form>
+        </DCCReference>
+        <DCCReference Include="MultiBuilder.Editor.Project.pas">
+            <Form>frmEditProject</Form>
+        </DCCReference>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

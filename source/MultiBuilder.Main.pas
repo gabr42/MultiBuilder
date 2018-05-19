@@ -20,11 +20,16 @@ type
     SaveProject: TSaveDialog;
     procedure FormCreate(Sender: TObject);
     procedure tbConfigureEnvironmentClick(Sender: TObject);
+    procedure tbEditProjectClick(Sender: TObject);
     procedure tbLoadProjectClick(Sender: TObject);
   private
     FEngine: IMultiBuilderEngine;
+    FEngineConfig: string;
     FProjectFile: string;
+    procedure ParseCommandLine;
     procedure RecreateEnvironment;
+    procedure ReloadEngine;
+    procedure ReloadProject;
   public
   end;
 
@@ -36,6 +41,7 @@ implementation
 uses
   MultiBuilder.Engine,
   MultiBuilder.Platform,
+  MultiBuilder.Editor.Project,
   MultiBuilder.Editor.Environment;
 
 {$R *.fmx}
@@ -48,8 +54,28 @@ begin
   SaveProject.Filter := OpenProject.Filter;
 
   FEngine := CreateMultiBUilderEngine;
-  if FEngine.LoadFrom(MBPlatform.EnvConfigName) then
-    RecreateEnvironment;
+  FEngineConfig := MBPlatform.EnvConfigName;
+  ReloadEngine;
+
+  ParseCommandLine;
+end;
+
+procedure TfrmMultiBuilderMain.ParseCommandLine;
+var
+  ext: string;
+  i  : integer;
+begin
+  for i := 1 to ParamCount do begin
+    ext := ExtractFileExt(ParamStr(i));
+    if SameText(ext, MBPlatform.EnvConfigExt) then begin
+      FEngineConfig := ParamStr(i);
+      ReloadEngine;
+    end
+    else if SameText(ext, MBPlatform.ProjConfigExt) then begin
+      FProjectFile := ParamStr(i);
+      ReloadProject;
+    end;
+  end;
 end;
 
 procedure TfrmMultiBuilderMain.RecreateEnvironment;
@@ -61,20 +87,43 @@ begin
     lbEnvironments.Items.Add(envName);
 end;
 
+procedure TfrmMultiBuilderMain.ReloadEngine;
+begin
+  if not FEngine.LoadFrom(FEngineConfig) then
+    ShowMessage('Bad configuration file ' + FEngineConfig);
+  RecreateEnvironment;
+end;
+
+procedure TfrmMultiBuilderMain.ReloadProject;
+var
+  projFile: string;
+begin
+  projFile := FProjectFile;
+  if (FProjectFile <> '') and FileExists(FProjectFile) then begin
+    if not FEngine.LoadProject(FProjectFile) then begin
+      ShowMessage('Bad project file ' + FProjectFile);
+      projFile := '';
+    end;
+  end;
+  if projFile <> '' then
+    Caption := 'MultiBuilder [' + FProjectFile + ']'
+  else begin
+    Caption := 'MultiBuilder';
+    FEngine.ClearProject;
+  end;
+end;
+
 procedure TfrmMultiBuilderMain.tbConfigureEnvironmentClick(Sender: TObject);
 var
   changed   : boolean;
   frmEnvEdit: TfrmEditEnvironment;
   iniContent: TStringList;
-  iniFile   : string;
 begin
-  iniFile := MBPlatform.EnvConfigName;
-
   iniContent := TStringList.Create;
   try
     changed := false;
-    if FileExists(iniFile) then
-      iniContent.LoadFromFile(iniFile);
+    if FileExists(FEngineConfig) then
+      iniContent.LoadFromFile(FEngineConfig);
 
     frmEnvEdit := TfrmEditEnvironment.Create(Self);
     try
@@ -86,21 +135,49 @@ begin
     finally FreeAndNil(frmEnvEdit); end;
 
     if changed then begin
-      iniContent.SaveToFile(iniFile);
-      if not FEngine.LoadFrom(iniFile) then
-        ShowMessage('Bad configuration file');
-      RecreateEnvironment;
+      iniContent.SaveToFile(FEngineConfig);
+      ReloadEngine;
     end;
   finally FreeAndNil(iniContent); end;
+end;
+
+procedure TfrmMultiBuilderMain.tbEditProjectClick(Sender: TObject);
+var
+  changed    : boolean;
+  frmProjEdit: TfrmEditProject;
+  projContent: TStringList;
+begin
+  projContent := TStringList.Create;
+  try
+    changed := false;
+    if (FProjectFile <> '') and FileExists(FProjectFile) then
+      projContent.LoadFromFile(FProjectFile);
+
+    frmProjEdit := TfrmEditProject.Create(Self);
+    try
+      frmProjEdit.Project := projContent.Text;
+      if frmProjEdit.ShowModal = mrOK then begin
+        projContent.Text := frmProjEdit.Project;
+        changed := true;
+      end;
+    finally FreeAndNil(frmProjEdit); end;
+
+    if changed then begin
+      if FProjectFile = '' then begin
+        if not SaveProject.Execute then
+          Exit;
+        FProjectFile := SaveProject.FileName;
+      end;
+      projContent.SaveToFile(FProjectFile);
+    end;
+  finally FreeAndNil(projContent); end;
 end;
 
 procedure TfrmMultiBuilderMain.tbLoadProjectClick(Sender: TObject);
 begin
   if OpenProject.Execute then begin
     FProjectFile := OpenProject.FileName;
-    if not FEngine.LoadProject(FProjectFile) then
-      ShowMessage('Bad project file');
-    Caption := 'MultiBuilder [' + FProjectFile + ']';
+    ReloadProject;
   end;
 end;
 
@@ -119,12 +196,12 @@ end.
 // Project:
 
 //[Global]
-//  Root=h:\razvoj\omnithreadlibrary-v4\unittests
-//  $(Path)\dcc32 CompileAllUnits -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e$(Scratch)\exe -n0$(Scratch)\dcu\win32 -dCONSOLE_TESTRUNNER
-//  $(Path)\dcc32 TestRunner -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e$(Scratch)\exe -n0$(Scratch)\dcu\win32 -dCONSOLE_TESTRUNNER
-//  $(Scratch)\exe\TestRunner
-//  $(Path)\dcc64 CompileAllUnits -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e$(Scratch)\exe -n0$(Scratch)\dcu\win64 -dCONSOLE_TESTRUNNER
-//  $(Path)\dcc64 TestRunner -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e$(Scratch)\exe -n0$(Scratch)\dcu\win64 -dCONSOLE_TESTRUNNER
-//  $(Scratch)\exe\TestRunner
+// Root=h:\razvoj\omnithreadlibrary-v4\unittests
+// Cmd=$(Path)\dcc32 CompileAllUnits -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e$(Scratch)\exe -n0$(Scratch)\dcu\win32 -dCONSOLE_TESTRUNNER
+// Cmd=$(Path)\dcc32 TestRunner -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e$(Scratch)\exe -n0$(Scratch)\dcu\win32 -dCONSOLE_TESTRUNNER
+// Cmd=$(Scratch)\exe\TestRunner
+// Cmd=$(Path)\dcc64 CompileAllUnits -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e$(Scratch)\exe -n0$(Scratch)\dcu\win64 -dCONSOLE_TESTRUNNER
+// Cmd=$(Path)\dcc64 TestRunner -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e$(Scratch)\exe -n0$(Scratch)\dcu\win64 -dCONSOLE_TESTRUNNER
+// Cmd=$(Scratch)\exe\TestRunner
 
 

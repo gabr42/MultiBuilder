@@ -23,6 +23,7 @@ type
   public
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
+    procedure ClearProject;
     function Environments: TArray<string>;
     function LoadFrom(const iniFile: string): boolean;
     function LoadProject(const projFile: string): boolean;
@@ -45,6 +46,10 @@ procedure TMultiBuilderEngine.BeforeDestruction;
 begin
   FreeAndNil(FSections);
   inherited;
+end;
+
+procedure TMultiBuilderEngine.ClearProject;
+begin
 end;
 
 function TMultiBuilderEngine.Environments: TArray<string>;
