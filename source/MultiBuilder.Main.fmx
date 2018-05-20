@@ -3228,15 +3228,15 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
     Left = 496
     Top = 496
     object actRun: TAction
-      Text = 'Run'
-      Hint = 'Run'
+      Text = 'Run All'
+      Hint = 'Run all enviromnents'
       ShortCut = 120
       OnExecute = actRunExecute
       OnUpdate = actRunUpdate
     end
     object actRunSelected: TAction
       Text = 'Run Selected'
-      Hint = 'Run Selected'
+      Hint = 'Run selected environment'
       ShortCut = 32888
       OnExecute = actRunSelectedExecute
       OnUpdate = actRunSelectedUpdate

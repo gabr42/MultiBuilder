@@ -161,7 +161,7 @@ begin
   else if result.ExitCode = 0 then
     outLog.Text := 'OK'
   else
-    outLog.Text := result.Command + #13#10#13#10 + result.Output;
+    outLog.Text := '[' + result.ExitCode.ToString + '] ' + result.Command + #13#10#13#10 + result.Output;
 end;
 
 procedure TfrmMultiBuilderMain.MarkEnvironment(const environment: string);

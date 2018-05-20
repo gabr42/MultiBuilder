@@ -19,7 +19,8 @@ type
   TMultiBuilderEngine = class(TInterfacedObject, IMultiBuilderEngine)
   strict private
   const
-    CGlobalSectionName    = 'Global';
+    CGlobalSectionName    = 'Global';  // used always
+    CDefaultSectionName   = 'Default'; // used only if environment-specific section doesn't exist
     CWorkingFolderKeyName = 'Folder';
     CCommandKeyName       = 'Cmd';
     CForceDirKeyName      = 'ForceDir';
@@ -116,6 +117,7 @@ begin
   if SameText(name, CEnvironmentMacro) then
     Result := environment
   else if (not FVariables.TryGetValue(environment + '/' + name, Result))
+           and (not FVariables.TryGetValue(CDefaultSectionName + '/' + name, Result))
            and (not FVariables.TryGetValue(CGlobalSectionName + '/' + name, Result))
   then
     Result := '';
@@ -181,7 +183,7 @@ begin
   values := TStringList.Create;
   try
     for sEnv in FSections do begin
-      if not SameText(sEnv, CGlobalSectionName) then begin
+      if not (SameText(sEnv, CGlobalSectionName) or SameText(sEnv, CDefaultSectionName)) then begin
         FEnvironments[iEnv] := sEnv;
         Inc(iEnv);
       end;
@@ -214,7 +216,8 @@ end;
 procedure TMultiBuilderEngine.PrepareProjectConfig(const environment: string;
   var projectConfig: TProjectConfig);
 var
-  values: TStringList;
+  section: string;
+  values : TStringList;
 begin
   values := TStringList.Create;
   try
@@ -222,7 +225,12 @@ begin
     FProject.ReadSectionValues(CGlobalSectionName, values);
     ReplaceMacros(environment, values);
     projectConfig.Append(values);
-    FProject.ReadSectionValues(environment, values);
+
+    if FProject.SectionExists(environment) then
+      section := environment
+    else
+      section := CDefaultSectionName;
+    FProject.ReadSectionValues(section, values);
     ReplaceMacros(environment, values);
     projectConfig.Append(values);
   finally FreeAndNil(values); end;
