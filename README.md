@@ -166,6 +166,8 @@ Variables can only be defined in the *environment* configuration file.
 
 # User interface
 
+![MultiBuilder user interface](https://raw.githubusercontent.com/gabr42/MultiBuilder/master/doc/Screenshot.PNG)
+
 The list on the left contains all environments. An icon left to the environment name indicates the status of operation in this environment.
 
 ☑ Indicates that the project run without a problem.
