@@ -14,7 +14,7 @@ Execution environment consists of two parts - a configuration file defining all 
 
 Environment definitions are stored in a INI-style configuration file with extension `.mbenv`. Default environment configuration file is stored in `C:\Users\Public\Documents\multibuilder.mbenv`. You can use a different configuration file by providing its name as a command-line parameter or by clicking the *Load Environment* button. *Edit Environment* button opens up a simple text editor where you can modify the configuration file.
 
-Environment configuraton file is split into *sections*. Besides the special section named *Global* you can define any number of sections, each describing its own environment. The following example shows environment file used for testing [OmniThreadLibrary](http://www.omnithreadlibrary.com).
+Environment configuration file is split into *sections*. Besides the special section named *Global* you can define any number of sections, each describing its own environment. The following example shows environment file used for testing [OmniThreadLibrary](http://www.omnithreadlibrary.com).
 
 [Global]
 Scratch=c:\0\MultiBuilder\$(EnvironmentName)
@@ -72,7 +72,7 @@ Special macro *$(EnvironmentName)* always expands to the name of *environment* s
 
 Project definition is stored in a INI-style configuration file with extension `.mbproj`. There is no default project configuration file. You can provide it via the command-line parameter or by clicking the *Load Project* button. *Edit Project* button opens up a simple text editor where you can modify the project file.
 
-Project configuraton file is split into *sections*. Special section *Global* defines commands that are always executed. Sections with names corresponding to *environment* names contain commands that are only executed in that environment. If a section for specific environment doesn't exist in the project file, commands from the special *Default* section will be used. (For more information see *Running projects* below.)  
+Project configuration file is split into *sections*. Special section *Global* defines commands that are always executed. Sections with names corresponding to *environment* names contain commands that are only executed in that environment. If a section for specific environment doesn't exist in the project file, commands from the special *Default* section will be used. (For more information see *Running projects* below.)  
  
 The following example shows project file used for unit-testing [OmniThreadLibrary](http://www.omnithreadlibrary.com).
 
@@ -107,10 +107,46 @@ If you click the *Run All* button or press the `F9` key, the current project is 
 
 If an environment is selected and you click the *Run Selected* button or press the `Alt+F9` key combo, the project is started in selected environment.
 
-Each environment executes the project in its own thread. Therefore you can select one project, click *Run Selected*, repeat that with another projects, and both will be executed in parallel.  
+Each environment executes the project in its own thread. Therefore you can select one project, click *Run Selected*, repeat that with another projects, and both will be executed in parallel.
 
-In this example, environment *Delphi 2007* would execute all commands from the *Global* section. As there exists a *Delphi 2007* section, commands from the *Default* section are ignored. *Delphi 2007* section contains just one setting with key *Null*, which is ignores. (At least one setting must be stored in a section, otherwise the information about that section is lost when configuration file is loaded.)  
+In each environment the project is executed by following these steps:
 
-Environment 
+- Environment-specific section is located in the *project* configuration file. If it is not found, the special section *Default* is used instead. (See example below.)
+- *ForceDir* setting is read from the environment section of the *environment* configuration file. If it is not found there, it is read from the *Global* section of the same file.
+- Macros in the *ForceDir* settings are expanded. (See *Macro expansion* below.)
+- All folders in the *ForceDir* list (semicolon-delimited) are created.
+- *Folder* setting is read from the environment-specific section. If it is not found there, it is read from the *Global* section. 
+- Macros in the *Folder* setting are expanded. (See *Macro expansion* below.)
+- For each *Cmd* setting in the *Global* section the following steps are executed:
+    - Macros in the setting are expanded. Be careful to use double-quotes at appropriate places if a macro expansion can contain a space characted. (See *Macro expansion* below.)  
+    - Program is executed in the *Folder* directory.
+    - If program cannot be started or if it exits with a non-zero *exit code*, execution stops immediately.
+    - Otherwise the execution continues with the next *Cmd* setting.
+- For each *Cmd setting in the environment-specific section the same steps are executed.
+
+For example, if we use the [OmniThreadLibrary](http://www.omnithreadlibrary.com) configurations mentioned above, environment *Delphi 2007* would execute all commands from the *Global* section. As there exists a *Delphi 2007* section, commands from the *Default* section are ignored. *Delphi 2007* section contains just one setting with key *Null*, which is ignores. (At least one setting must be stored in a section, otherwise the information about that section is lost when configuration file is loaded.)  
+
+Environment *Delphi 10.1 Berlin*, on the other hand, would firstly execute all commands from the *Global* section, followed by all commands from the *Default* section.
+
+Following command can be used to start *MultiBuilder* and load appropriate *environment* and *project* configurations:
 
 Multibuilder.exe SmokeTest.mbenv SmokeTest.mbproj 
+
+# Macro expansion
+
+To request macro expansion, variable name must be wrapped into `$(` and `)`. For example, the following two lines from an environment configuration file define variable *Scratch* that refers to macro `$(EnvironmentName)` and special command *ForceDir* refers to macro `$(Scratch)`.   
+
+Scratch=c:\0\MultiBuilder\$(EnvironmentName)
+ForceDir=$(Scratch)\exe;$(Scratch)\dcu;$(Scratch)\dcu\win32;$(Scratch)\dcu\win64
+
+For example, when running the [OmniThreadLibrary](http://www.omnithreadlibrary.com) project in the *Delphi 2010* environment, these two settings would expand to:
+
+Scratch=c:\0\MultiBuilder\Delphi 2010
+ForceDir=c:\0\MultiBuilder\Delphi 2010\exe;c:\0\MultiBuilder\Delphi 2010\dcu;c:\0\MultiBuilder\Delphi 2010\dcu\win32;$(Scratch)\dcu\win64
+
+Except when referring to a special variable *EnvironmentName*, macro expander first tries to find the variable in the currntly active *environment* section and if that fails it uses the value from the *Global* section.
+
+Variables can only be defined in the *environment* configuration file.
+
+# User interface
+
