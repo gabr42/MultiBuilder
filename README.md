@@ -16,7 +16,7 @@ Environment definitions are stored in a INI-style configuration file with extens
 
 Environment configuration file is split into *sections*. Besides the special section named *Global* you can define any number of sections, each describing its own environment. The following example shows environment file used for testing [OmniThreadLibrary](http://www.omnithreadlibrary.com).
 
-> [Global]
+> [Global] 
 > Scratch=c:\0\MultiBuilder\$(EnvironmentName)
 > ForceDir=$(Scratch)\exe;$(Scratch)\dcu;$(Scratch)\dcu\win32;$(Scratch)\dcu\win64
 > 
@@ -76,21 +76,21 @@ Project configuration file is split into *sections*. Special section *Global* de
  
 The following example shows project file used for unit-testing [OmniThreadLibrary](http://www.omnithreadlibrary.com).
 
-> [Global]
+> [Global] 
 > Folder=h:\razvoj\omnithreadlibrary\unittests
 > Cmd=$(Path)\dcc32.exe CompileAllUnits -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e"$(Scratch)\exe" -n0"$(Scratch)\dcu\win32" -dCONSOLE_TESTRUNNER
 > Cmd=$(Path)\dcc32.exe TestRunner -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e"$(Scratch)\exe" -n0"$(Scratch)\dcu\win32" -dCONSOLE_TESTRUNNER
 > Cmd="$(Scratch)\exe\TestRunner.exe"
 > 
-> [Default]
+> [Default] 
 > Cmd=$(Path)\dcc64.exe CompileAllUnits -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e"$(Scratch)\exe" -n0"$(Scratch)\dcu\win64" -dCONSOLE_TESTRUNNER
 > Cmd=$(Path)\dcc64.exe TestRunner -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e"$(Scratch)\exe" -n0"$(Scratch)\dcu\win64" -dCONSOLE_TESTRUNNER
 > Cmd="$(Scratch)\exe\TestRunner.exe"
 > 
-> [Delphi 2007]
+> [Delphi 2007] 
 > Null=
 > 
-> [Delphi 2009]
+> [Delphi 2009] 
 > Null=
 > 
 > [Delphi 2010]
