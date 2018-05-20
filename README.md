@@ -166,3 +166,18 @@ Variables can only be defined in the *environment* configuration file.
 
 # User interface
 
+![MultiBuilder user interface](https://raw.githubusercontent.com/gabr42/MultiBuilder/master/doc/Screenshot.PNG)
+
+The list on the left contains all environments. An icon left to the environment name indicates the status of operation in this environment.
+
+![Ballot box with check](https://www.fileformat.info/info/unicode/char/2611/ballot_box_with_check.png) Indicates that the project run without a problem.
+
+![Ballot box with X](https://www.fileformat.info/info/unicode/char/2612/ballot_box_with_x.png) Indicates that problems were encountered.
+
+![Black medium right-pointing triangle](http://www.fileformat.info/info/unicode/char/23f5/black_medium_rightpointing_triangle.png) Indicates that the project is still executing.
+
+The editor on the right shows problems in the selected environment (*Delphi XE2*). First line contains exit code `[1]` and program line `d:\Delphi\9.0\bin\dcc32.exe CompileAllUnits ...`. It is followed by one empty line and the output of the program.
+
+# Contributions
+
+I'll gladly accept any pull request that makes this project better and more versatile. If you would like to contribute but don't know where to start, check the [Issues](https://github.com/gabr42/MultiBuilder/issues).
