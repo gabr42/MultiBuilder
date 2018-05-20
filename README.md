@@ -17,49 +17,65 @@ Environment definitions are stored in a INI-style configuration file with extens
 Environment configuration file is split into *sections*. Besides the special section named *Global* you can define any number of sections, each describing its own environment. The following example shows environment file used for testing [OmniThreadLibrary](http://www.omnithreadlibrary.com).
 
 > [Global] 
+>
 > Scratch=c:\0\MultiBuilder\$(EnvironmentName)
+>
 > ForceDir=$(Scratch)\exe;$(Scratch)\dcu;$(Scratch)\dcu\win32;$(Scratch)\dcu\win64
 > 
 > [Delphi 2007]
+> 
 > Path=d:\Delphi\5.0\bin
 > 
 > [Delphi 2009]
+> 
 > Path=d:\Delphi\6.0\bin
 > 
 > [Delphi 2010]                     *
+> 
 > Path=d:\Delphi\7.0\bin
 > 
 > [Delphi XE]
+> 
 > Path=d:\Delphi\8.0\bin
 > 
 > [Delphi XE2]
+> 
 > Path=d:\Delphi\9.0\bin
 > 
 > [Delphi XE3]
+> 
 > Path=d:\Delphi\10.0\bin
 > 
 > [Delphi XE4]
+> 
 > Path=d:\Delphi\11.0\bin
 > 
 > [Delphi XE5]
+> 
 > Path=d:\Delphi\12.0\bin
 > 
 > [Delphi XE6]
+> 
 > Path=d:\Delphi\14.0\bin
 > 
 > [Delphi XE7]
+> 
 > Path=d:\Delphi\15.0\bin
 > 
 > [Delphi XE8]
+> 
 > Path=d:\Delphi\16.0\bin
 > 
 > [Delphi 10 Seattle]
+> 
 > Path=d:\Delphi\17.0\bin
 > 
 > [Delphi 10.1 Berlin]
+> 
 > Path=d:\Delphi\18.0\bin
 > 
 > [Delphi 10.2 Tokyo]
+> 
 > Path=d:\Delphi\19.0\bin
 
 OmniThreadLibrary supports Delphi compilers from version *2007* to *10.2 Tokyo* and this configuration file reflects that. Each environment section defines *variable* `Path`. We'll see in the section *Project* below how this variable is used in practice. 
@@ -77,26 +93,37 @@ Project configuration file is split into *sections*. Special section *Global* de
 The following example shows project file used for unit-testing [OmniThreadLibrary](http://www.omnithreadlibrary.com).
 
 > [Global] 
+> 
 > Folder=h:\razvoj\omnithreadlibrary\unittests
+> 
 > Cmd=$(Path)\dcc32.exe CompileAllUnits -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e"$(Scratch)\exe" -n0"$(Scratch)\dcu\win32" -dCONSOLE_TESTRUNNER
+> 
 > Cmd=$(Path)\dcc32.exe TestRunner -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e"$(Scratch)\exe" -n0"$(Scratch)\dcu\win32" -dCONSOLE_TESTRUNNER
+> 
 > Cmd="$(Scratch)\exe\TestRunner.exe"
 > 
 > [Default] 
+> 
 > Cmd=$(Path)\dcc64.exe CompileAllUnits -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e"$(Scratch)\exe" -n0"$(Scratch)\dcu\win64" -dCONSOLE_TESTRUNNER
+> 
 > Cmd=$(Path)\dcc64.exe TestRunner -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e"$(Scratch)\exe" -n0"$(Scratch)\dcu\win64" -dCONSOLE_TESTRUNNER
+> 
 > Cmd="$(Scratch)\exe\TestRunner.exe"
 > 
 > [Delphi 2007] 
+> 
 > Null=
 > 
 > [Delphi 2009] 
+> 
 > Null=
 > 
 > [Delphi 2010]
+> 
 > Null=
 > 
 > [Delphi XE]
+> 
 > Null=
 
 Section *Global* specifies a *folder* which is used as a *working directory* for each command. Commands are all introduced with key *Cmd*. All other keys are ignored.
@@ -137,11 +164,13 @@ Following command can be used to start *MultiBuilder* and load appropriate *envi
 To request macro expansion, variable name must be wrapped into `$(` and `)`. For example, the following two lines from an environment configuration file define variable *Scratch* that refers to macro `$(EnvironmentName)` and special command *ForceDir* refers to macro `$(Scratch)`.   
 
 > Scratch=c:\0\MultiBuilder\$(EnvironmentName)
+> 
 > ForceDir=$(Scratch)\exe;$(Scratch)\dcu;$(Scratch)\dcu\win32;$(Scratch)\dcu\win64
 
 For example, when running the [OmniThreadLibrary](http://www.omnithreadlibrary.com) project in the *Delphi 2010* environment, these two settings would expand to:
 
 > Scratch=c:\0\MultiBuilder\Delphi 2010
+> 
 > ForceDir=c:\0\MultiBuilder\Delphi 2010\exe;c:\0\MultiBuilder\Delphi 2010\dcu;c:\0\MultiBuilder\Delphi 2010\dcu\win32;$(Scratch)\dcu\win64
 
 Except when referring to a special variable *EnvironmentName*, macro expander first tries to find the variable in the currntly active *environment* section and if that fails it uses the value from the *Global* section.
