@@ -168,13 +168,11 @@ end;
 procedure TMultiBuilderEngine.LoadFromIni(memIni: TMemIniFile);
 var
   iEnv    : integer;
-  p       : integer;
   sEnv    : string;
   sName   : string;
   sNameVar: string;
   sVar    : string;
   values  : TStringList;
-  kv: TPair<string, string>;
 begin
   memIni.ReadSections(FSections);
   SetLength(FEnvironments, FSections.Count);
@@ -326,6 +324,7 @@ var
   threadConfig: TProjectConfig;
 begin
   threadConfig := projectConfig;
+  threadConfig.WorkDir := ReplaceMacros(environment, threadConfig.WorkDir);
   future := TFuture<TExecuteResult>.Create(TObject(nil), TFunctionEvent<TExecuteResult>(nil),
     function: TExecuteResult
     begin

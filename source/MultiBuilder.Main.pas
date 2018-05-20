@@ -71,8 +71,7 @@ uses
 
 procedure TfrmMultiBuilderMain.actRunExecute(Sender: TObject);
 var
-  i   : integer;
-  sEnv: string;
+  i: integer;
 begin
   FResults.Clear;
   Toolbar.Enabled := false;
