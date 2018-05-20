@@ -17,35 +17,35 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
     Size.Height = 97.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 1
-    object tbConfigureEnvironment: TButton
-      Position.X = 8.000000000000000000
-      Position.Y = 11.000000000000000000
-      Size.Width = 97.000000000000000000
-      Size.Height = 78.000000000000000000
-      Size.PlatformDefault = False
-      TabOrder = 0
-      Text = 'Configure Environment'
-      TextSettings.WordWrap = True
-      OnClick = tbConfigureEnvironmentClick
-    end
-    object tbLoadProject: TButton
-      Position.X = 152.000000000000000000
+    object tbEditEnvironment: TButton
+      Position.X = 128.000000000000000000
       Position.Y = 11.000000000000000000
       Size.Width = 97.000000000000000000
       Size.Height = 78.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 1
-      Text = 'Load Project'
+      Text = 'Edit Environment'
       TextSettings.WordWrap = True
-      OnClick = tbLoadProjectClick
+      OnClick = tbEditEnvironmentClick
     end
-    object tbEditProject: TButton
-      Position.X = 264.000000000000000000
+    object tbLoadProject: TButton
+      Position.X = 272.000000000000000000
       Position.Y = 11.000000000000000000
       Size.Width = 97.000000000000000000
       Size.Height = 78.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 2
+      Text = 'Load Project'
+      TextSettings.WordWrap = True
+      OnClick = tbLoadProjectClick
+    end
+    object tbEditProject: TButton
+      Position.X = 384.000000000000000000
+      Position.Y = 11.000000000000000000
+      Size.Width = 97.000000000000000000
+      Size.Height = 78.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 3
       Text = 'Edit Project'
       TextSettings.WordWrap = True
       OnClick = tbEditProjectClick
@@ -55,7 +55,7 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
       Default = True
       Enabled = True
       ImageIndex = -1
-      Position.X = 408.000000000000000000
+      Position.X = 528.000000000000000000
       Position.Y = 11.000000000000000000
       Size.Width = 97.000000000000000000
       Size.Height = 78.000000000000000000
@@ -70,15 +70,26 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
       Default = True
       Enabled = True
       ImageIndex = -1
-      Position.X = 520.000000000000000000
+      Position.X = 640.000000000000000000
       Position.Y = 11.000000000000000000
       Size.Width = 97.000000000000000000
       Size.Height = 78.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 3
+      TabOrder = 5
       TextSettings.WordWrap = True
       ParentShowHint = False
       ShowHint = True
+    end
+    object tbLoadEnvironment: TButton
+      Position.X = 16.000000000000000000
+      Position.Y = 11.000000000000000000
+      Size.Width = 97.000000000000000000
+      Size.Height = 78.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Text = 'Load Environment'
+      TextSettings.WordWrap = True
+      OnClick = tbLoadEnvironmentClick
     end
   end
   object StyleBook1: TStyleBook
@@ -3189,7 +3200,7 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
   object lbEnvironments: TListBox
     Align = Left
     Position.Y = 97.000000000000000000
-    Size.Width = 153.000000000000000000
+    Size.Width = 129.000000000000000000
     Size.Height = 535.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 3
@@ -3198,31 +3209,43 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
     DefaultItemStyles.GroupHeaderStyle = ''
     DefaultItemStyles.GroupFooterStyle = ''
     OnChange = lbEnvironmentsChange
-    Viewport.Width = 149.000000000000000000
+    Viewport.Width = 125.000000000000000000
     Viewport.Height = 531.000000000000000000
   end
   object OpenProject: TOpenDialog
     Filter = 'MultiBuilder project file|*$(mbproj)|Any file|*.*'
     Options = [ofHideReadOnly, ofFileMustExist, ofEnableSizing]
-    Left = 384
-    Top = 488
+    Left = 280
+    Top = 456
   end
   object SaveProject: TSaveDialog
     Filter = 'MultiBuilder project file|*$(mbproj)|Any file|*.*'
     Options = [ofOverwritePrompt, ofHideReadOnly, ofPathMustExist, ofEnableSizing]
-    Left = 280
-    Top = 496
+    Left = 200
+    Top = 456
   end
   object outLog: TMemo
     Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
     DataDetectorTypes = []
     Align = Client
-    Size.Width = 680.000000000000000000
+    Size.Width = 704.000000000000000000
     Size.Height = 535.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 9
-    Viewport.Width = 676.000000000000000000
+    Viewport.Width = 700.000000000000000000
     Viewport.Height = 531.000000000000000000
+  end
+  object SaveEnvironment: TSaveDialog
+    Filter = 'MultiBuilder environment file|*$(mbenv)|Any file|*.*'
+    Options = [ofOverwritePrompt, ofHideReadOnly, ofPathMustExist, ofEnableSizing]
+    Left = 200
+    Top = 496
+  end
+  object OpenEnvironment: TOpenDialog
+    Filter = 'MultiBuilder environment file|*$(mbenv)|Any file|*.*'
+    Options = [ofHideReadOnly, ofFileMustExist, ofEnableSizing]
+    Left = 280
+    Top = 496
   end
   object ActionList1: TActionList
     Left = 496

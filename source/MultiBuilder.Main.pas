@@ -13,7 +13,7 @@ type
   TfrmMultiBuilderMain = class(TForm)
     StyleBook1: TStyleBook;
     Toolbar: TPanel;
-    tbConfigureEnvironment: TButton;
+    tbEditEnvironment: TButton;
     lbEnvironments: TListBox;
     tbLoadProject: TButton;
     tbEditProject: TButton;
@@ -25,6 +25,9 @@ type
     outLog: TMemo;
     tbRunSelected: TButton;
     actRunSelected: TAction;
+    tbLoadEnvironment: TButton;
+    SaveEnvironment: TSaveDialog;
+    OpenEnvironment: TOpenDialog;
     procedure actRunExecute(Sender: TObject);
     procedure actRunSelectedExecute(Sender: TObject);
     procedure actRunSelectedUpdate(Sender: TObject);
@@ -32,8 +35,9 @@ type
     procedure FormDestroy(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure lbEnvironmentsChange(Sender: TObject);
-    procedure tbConfigureEnvironmentClick(Sender: TObject);
+    procedure tbEditEnvironmentClick(Sender: TObject);
     procedure tbEditProjectClick(Sender: TObject);
+    procedure tbLoadEnvironmentClick(Sender: TObject);
     procedure tbLoadProjectClick(Sender: TObject);
   private
     FEngine: IMultiBuilderEngine;
@@ -127,6 +131,10 @@ end;
 
 procedure TfrmMultiBuilderMain.FormCreate(Sender: TObject);
 begin
+  OpenEnvironment.Filter := StringReplace(OpenEnvironment.Filter,
+                              '$(mbenv)', MBPlatform.EnvConfigExt,
+                              [rfReplaceAll]);
+  SaveEnvironment.Filter := OpenEnvironment.Filter;
   OpenProject.Filter := StringReplace(OpenProject.Filter,
                           '$(mbproj)', MBPlatform.ProjConfigExt,
                           [rfReplaceAll]);
@@ -243,7 +251,7 @@ begin
   end;
 end;
 
-procedure TfrmMultiBuilderMain.tbConfigureEnvironmentClick(Sender: TObject);
+procedure TfrmMultiBuilderMain.tbEditEnvironmentClick(Sender: TObject);
 var
   changed   : boolean;
   frmEnvEdit: TfrmEditEnvironment;
@@ -260,7 +268,7 @@ begin
       frmEnvEdit.Environment := iniContent.Text;
       if frmEnvEdit.ShowModal = mrOK then begin
         iniContent.Text := frmEnvEdit.Environment;
-        changed := true;
+         changed := true;
       end;
     finally FreeAndNil(frmEnvEdit); end;
 
@@ -302,6 +310,14 @@ begin
       ReloadProject;
     end;
   finally FreeAndNil(projContent); end;
+end;
+
+procedure TfrmMultiBuilderMain.tbLoadEnvironmentClick(Sender: TObject);
+begin
+  if OpenEnvironment.Execute then begin
+    FEngineConfig := OpenEnvironment.FileName;
+    ReloadEngine;
+  end;
 end;
 
 procedure TfrmMultiBuilderMain.tbLoadProjectClick(Sender: TObject);
