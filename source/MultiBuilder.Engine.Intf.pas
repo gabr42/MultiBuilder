@@ -6,7 +6,12 @@ uses
   System.Generics.Collections;
 
 type
-  TExecuteResult = TPair<integer,string>; //exit code, program output
+  TExecuteResult = record
+    Command : string;
+    ExitCode: integer;
+    Output  : string;
+    constructor Create(const ACommand: string; AExitCode: integer; const AOutput: string);
+  end;
 
   TJobDoneEvent = reference to procedure (const environment: string; const result: TExecuteResult);
   TRunCompletedEvent = reference to procedure;
@@ -22,11 +27,20 @@ type
     function LoadFrom(const iniFile: string): boolean;
     function LoadProject(const projFile: string): boolean;
     procedure Run;
+    procedure RunSelected(const environment: string);
     property OnJobDone: TJobDoneEvent read GetOnJobDone write SetOnJobDone;
     property OnRunCompleted: TRunCompletedEvent read GetOnRunCompleted write
       SetOnRunCompleted;
   end;
 
 implementation
+
+constructor TExecuteResult.Create(const ACommand: string; AExitCode: integer;
+  const AOutput: string);
+begin
+  Command := ACommand;
+  ExitCode := AExitCode;
+  Output := AOutput;
+end;
 
 end.

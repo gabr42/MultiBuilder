@@ -10,10 +10,10 @@ function CreateMultiBuilderEngine: IMultiBuilderEngine;
 implementation
 
 uses
-Windows,
   System.SysUtils, System.StrUtils, System.Classes, System.IniFiles,
   System.Generics.Defaults, System.Generics.Collections,
-  System.Threading;
+  System.Threading,
+  MultiBuilder.Platform;
 
 type
   TMultiBuilderEngine = class(TInterfacedObject, IMultiBuilderEngine)
@@ -22,6 +22,7 @@ type
     CGlobalSectionName    = 'Global';
     CWorkingFolderKeyName = 'Folder';
     CCommandKeyName       = 'Cmd';
+    CForceDirKeyName      = 'ForceDir';
     CEnvironmentMacro     = 'EnvironmentName';
   type
     TEnvVarTable   = TDictionary<string, string>;
@@ -40,18 +41,18 @@ type
     FSections      : TStringList;
     FVariables     : TEnvVarTable;
   strict protected
+    procedure CreateFolders(const environment: string);
     function  EvaluateMacro(const environment, name: string): string;
     function  GetOnJobDone: TJobDoneEvent;
     function  GetOnRunCompleted: TRunCompletedEvent;
     procedure LoadFromIni(memIni: TMemIniFile);
     procedure PrepareProjectConfig(const environment: string; var projectConfig:
       TProjectConfig);
-    procedure Run;
     procedure ReplaceMacros(const environment: string; values: TStringList); overload;
     function  ReplaceMacros(const environment, value: string): string; overload;
     procedure JobDone(const environment: string; const result: TExecuteResult);
-    procedure SetOnJobDone(const Value: TJobDoneEvent);
-    procedure SetOnRunCompleted(const Value: TRunCompletedEvent);
+    procedure SetOnJobDone(const value: TJobDoneEvent);
+    procedure SetOnRunCompleted(const value: TRunCompletedEvent);
     procedure StartRunner(const environment: string; const projectConfig: TProjectConfig);
   protected
     class function Split(const kv: string; var key, value: string): boolean;
@@ -59,9 +60,11 @@ type
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
     procedure ClearProject;
-    function Environments: TArray<string>;
-    function LoadFrom(const iniFile: string): boolean;
-    function LoadProject(const projFile: string): boolean;
+    function  Environments: TArray<string>;
+    function  LoadFrom(const iniFile: string): boolean;
+    function  LoadProject(const projFile: string): boolean;
+    procedure Run;
+    procedure RunSelected(const environment: string);
     property OnJobDone: TJobDoneEvent read GetOnJobDone write SetOnJobDone;
     property OnRunCompleted: TRunCompletedEvent read GetOnRunCompleted write SetOnRunCompleted;
   end;
@@ -91,6 +94,16 @@ end;
 procedure TMultiBuilderEngine.ClearProject;
 begin
   FreeAndNil(FProject);
+end;
+
+procedure TMultiBuilderEngine.CreateFolders(const environment: string);
+var
+  folder : string;
+  folders: TArray<string>;
+begin
+  folders := EvaluateMacro(environment, CForceDirKeyName).Split([';'], '"', '"');
+  for folder in folders do
+    ForceDirectories(ReplaceMacros(environment, folder));
 end;
 
 function TMultiBuilderEngine.Environments: TArray<string>;
@@ -125,7 +138,7 @@ begin
     OnJobDone(environment, result);
   Dec(FCountRunners);
   if (FCountRunners = 0) and assigned(OnRunCompleted) then
-    OnRunCompleted;
+    OnRunCompleted();
 end;
 
 function TMultiBuilderEngine.LoadFrom(const iniFile: string): boolean;
@@ -180,9 +193,6 @@ begin
     end;
   finally FreeAndNil(values); end;
   SetLength(FEnvironments, iEnv);
-
-  for kv in FVariables do
-    OutputDebugString(PChar(Format('%s=%s', [kv.Key, kv.Value])));
 end;
 
 function TMultiBuilderEngine.LoadProject(const projFile: string): boolean;
@@ -250,28 +260,42 @@ end;
 
 procedure TMultiBuilderEngine.Run;
 var
-  projConfig: TProjectConfig;
-  sEnv      : string;
+  sEnv: string;
 begin
-  if not assigned(FProject) then
+  if (not assigned(FProject)) or (Length(FEnvironments) = 0) then begin
+    if assigned(OnRunCompleted) then
+      OnRunCompleted();
     Exit;
+  end;
 
   FCountRunners := Length(FEnvironments);
 
-  for sEnv in FEnvironments do begin
-    PrepareProjectConfig(sEnv, projConfig);
-    StartRunner(sEnv, projConfig);
+  for sEnv in FEnvironments do
+    RunSelected(sEnv);
+end;
+
+procedure TMultiBuilderEngine.RunSelected(const environment: string);
+var
+  projConfig: TProjectConfig;
+begin
+  PrepareProjectConfig(environment, projConfig);
+  try
+    CreateFolders(environment);
+    StartRunner(environment, projConfig);
+  except
+    on E: Exception do
+      JobDone(environment, TExecuteResult.Create('', 255, E.Message));
   end;
 end;
 
-procedure TMultiBuilderEngine.SetOnJobDone(const Value: TJobDoneEvent);
+procedure TMultiBuilderEngine.SetOnJobDone(const value: TJobDoneEvent);
 begin
-  FOnJobDone := Value;
+  FOnJobDone := value;
 end;
 
-procedure TMultiBuilderEngine.SetOnRunCompleted(const Value: TRunCompletedEvent);
+procedure TMultiBuilderEngine.SetOnRunCompleted(const value: TRunCompletedEvent);
 begin
-  FOnRunCompleted := Value;
+  FOnRunCompleted := value;
 end;
 
 class function TMultiBuilderEngine.Split(const kv: string; var key, value: string):
@@ -329,9 +353,17 @@ begin
 end;
 
 function TMultiBuilderEngine.TProjectConfig.Execute: TExecuteResult;
+var
+  cmd     : string;
+  exitCode: integer;
+  output  : string;
 begin
-  Result := TExecuteResult.Create(0, '');
-  Sleep(5000);
+  for cmd in Commands do begin
+    MBPlatform.Execute(WorkDir, cmd, exitCode, output);
+    if exitCode <> 0 then
+      Exit(TExecuteResult.Create(cmd, exitCode, output));
+  end;
+  Result := TExecuteResult.Create('', 0, '');
 end;
 
 end.

@@ -60,6 +60,21 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
       Size.Width = 97.000000000000000000
       Size.Height = 78.000000000000000000
       Size.PlatformDefault = False
+      TabOrder = 4
+      TextSettings.WordWrap = True
+      ParentShowHint = False
+      ShowHint = True
+    end
+    object tbRunSelected: TButton
+      Action = actRunSelected
+      Default = True
+      Enabled = True
+      ImageIndex = -1
+      Position.X = 520.000000000000000000
+      Position.Y = 11.000000000000000000
+      Size.Width = 97.000000000000000000
+      Size.Height = 78.000000000000000000
+      Size.PlatformDefault = False
       TabOrder = 3
       TextSettings.WordWrap = True
       ParentShowHint = False
@@ -3182,29 +3197,49 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
     DefaultItemStyles.ItemStyle = ''
     DefaultItemStyles.GroupHeaderStyle = ''
     DefaultItemStyles.GroupFooterStyle = ''
+    OnChange = lbEnvironmentsChange
     Viewport.Width = 149.000000000000000000
     Viewport.Height = 531.000000000000000000
   end
   object OpenProject: TOpenDialog
     Filter = 'MultiBuilder project file|*$(mbproj)|Any file|*.*'
     Options = [ofHideReadOnly, ofFileMustExist, ofEnableSizing]
-    Left = 176
-    Top = 112
+    Left = 384
+    Top = 488
   end
   object SaveProject: TSaveDialog
     Filter = 'MultiBuilder project file|*$(mbproj)|Any file|*.*'
     Options = [ofOverwritePrompt, ofHideReadOnly, ofPathMustExist, ofEnableSizing]
-    Left = 240
-    Top = 112
+    Left = 280
+    Top = 496
+  end
+  object outLog: TMemo
+    Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+    DataDetectorTypes = []
+    Align = Client
+    Size.Width = 680.000000000000000000
+    Size.Height = 535.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 9
+    Viewport.Width = 676.000000000000000000
+    Viewport.Height = 531.000000000000000000
   end
   object ActionList1: TActionList
-    Left = 400
-    Top = 304
+    Left = 496
+    Top = 496
     object actRun: TAction
       Text = 'Run'
       Hint = 'Run'
       ShortCut = 120
       OnExecute = actRunExecute
+      OnUpdate = actRunUpdate
+    end
+    object actRunSelected: TAction
+      Text = 'Run Selected'
+      Hint = 'Run Selected'
+      ShortCut = 32888
+      OnExecute = actRunSelectedExecute
+      OnUpdate = actRunSelectedUpdate
     end
   end
 end

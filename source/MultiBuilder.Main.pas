@@ -7,7 +7,7 @@ uses
   System.Generics.Defaults, System.Generics.Collections,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs,
   FMX.Controls.Presentation, FMX.StdCtrls, FMX.Layouts, FMX.ListBox,
-  MultiBuilder.Engine.Intf, System.Actions, FMX.ActnList;
+  MultiBuilder.Engine.Intf, System.Actions, FMX.ActnList, FMX.ScrollBox, FMX.Memo;
 
 type
   TfrmMultiBuilderMain = class(TForm)
@@ -22,9 +22,16 @@ type
     tbRun: TButton;
     ActionList1: TActionList;
     actRun: TAction;
+    outLog: TMemo;
+    tbRunSelected: TButton;
+    actRunSelected: TAction;
     procedure actRunExecute(Sender: TObject);
+    procedure actRunSelectedExecute(Sender: TObject);
+    procedure actRunSelectedUpdate(Sender: TObject);
+    procedure actRunUpdate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure lbEnvironmentsChange(Sender: TObject);
     procedure tbConfigureEnvironmentClick(Sender: TObject);
     procedure tbEditProjectClick(Sender: TObject);
     procedure tbLoadProjectClick(Sender: TObject);
@@ -51,8 +58,8 @@ var
 implementation
 
 uses
-  MultiBuilder.Engine,
   MultiBuilder.Platform,
+  MultiBuilder.Engine,
   MultiBuilder.Editor.Project,
   MultiBuilder.Editor.Environment;
 
@@ -60,19 +67,48 @@ uses
 
 procedure TfrmMultiBuilderMain.actRunExecute(Sender: TObject);
 var
+  i   : integer;
   sEnv: string;
 begin
   FResults.Clear;
-  for sEnv in FEngine.Environments do
-    MarkEnvironment(sEnv);
-
+  Toolbar.Enabled := false;
+  lbEnvironments.ItemIndex := -1; //force reload
+  for i := 0 to lbEnvironments.Items.Count - 1 do
+    lbEnvironments.Items[i] := #$2BC8 + ' ' + CleanEnvironment(lbEnvironments.Items[i]);
+  FEngine.OnRunCompleted :=
+    procedure
+    begin
+      Toolbar.Enabled := true;
+    end;
   FEngine.Run;
+end;
+
+procedure TfrmMultiBuilderMain.actRunSelectedExecute(Sender: TObject);
+var
+  env: string;
+begin
+  env := CleanEnvironment(lbEnvironments.Items[lbEnvironments.ItemIndex]);
+  FResults.Remove(env);
+  lbEnvironments.Items[lbEnvironments.ItemIndex] := #$2BC8 + ' ' + env;
+  lbEnvironmentsChange(lbEnvironments);
+  FEngine.OnRunCompleted := nil;
+  FEngine.RunSelected(env);
+end;
+
+procedure TfrmMultiBuilderMain.actRunSelectedUpdate(Sender: TObject);
+begin
+  (Sender as TAction).Enabled := Toolbar.Enabled and (lbEnvironments.ItemIndex >= 0);
+end;
+
+procedure TfrmMultiBuilderMain.actRunUpdate(Sender: TObject);
+begin
+  (Sender as TAction).Enabled := Toolbar.Enabled;
 end;
 
 function TfrmMultiBuilderMain.CleanEnvironment(const environment: string): string;
 begin
   Result := environment;
-  if (Result <> '') and ((Result[1] = #$2611) or (Result[1] = #$2612)) then
+  if (Result <> '') and ((Result[1] = #$2611) or (Result[1] = #$2612) or (Result[1] = #$2BC8)) then
     Delete(Result, 1, 2);
 end;
 
@@ -110,6 +146,24 @@ begin
   ParseCommandLine;
 end;
 
+procedure TfrmMultiBuilderMain.lbEnvironmentsChange(Sender: TObject);
+var
+  result: TExecuteResult;
+begin
+  if lbEnvironments.ItemIndex = -1 then
+    outLog.Text := ''
+  else if not FResults.TryGetValue(CleanEnvironment(lbEnvironments.Items[lbEnvironments.ItemIndex]), result) then begin
+    if CleanEnvironment(lbEnvironments.Items[lbEnvironments.ItemIndex]) = lbEnvironments.Items[lbEnvironments.ItemIndex] then
+      outLog.Text := 'Not started'
+    else
+      outLog.Text := 'Running';
+  end
+  else if result.ExitCode = 0 then
+    outLog.Text := 'OK'
+  else
+    outLog.Text := result.Command + #13#10#13#10 + result.Output;
+end;
+
 procedure TfrmMultiBuilderMain.MarkEnvironment(const environment: string);
 var
   idx   : integer;
@@ -121,7 +175,7 @@ begin
 
   if not FResults.TryGetValue(environment, result) then
     lbEnvironments.Items[idx] := environment
-  else if result.Key = 0 then
+  else if result.ExitCode = 0 then
     lbEnvironments.Items[idx] := #$2611 + ' ' + environment
   else
     lbEnvironments.Items[idx] := #$2612 + ' ' + environment;
@@ -132,6 +186,8 @@ procedure TfrmMultiBuilderMain.MarkJobDone(const environment: string;
 begin
   FResults.AddOrSetValue(environment, result);
   MarkEnvironment(environment);
+  if (lbEnvironments.ItemIndex >= 0) and (CleanEnvironment(lbEnvironments.Items[lbEnvironments.ItemIndex]) = environment) then
+    lbEnvironmentsChange(lbEnvironments);
 end;
 
 procedure TfrmMultiBuilderMain.ParseCommandLine;
@@ -243,6 +299,7 @@ begin
         FProjectFile := SaveProject.FileName;
       end;
       projContent.SaveToFile(FProjectFile);
+      ReloadProject;
     end;
   finally FreeAndNil(projContent); end;
 end;
@@ -256,25 +313,4 @@ begin
 end;
 
 end.
-
-// Environment:
-
-//[Global]
-//Scratch=c:\0\MultiBuilder\$(EnvironmentName)
-//ForceDir=$(Scratch)\exe;$(Scratch)\dcu
-//
-//[Delphi 2007]
-//Path=d:\Delphi\5.0
-
-// Project:
-
-//[Global]
-// Folder=h:\razvoj\omnithreadlibrary-v4\unittests
-// Cmd=$(Path)\dcc32 CompileAllUnits -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e$(Scratch)\exe -n0$(Scratch)\dcu\win32 -dCONSOLE_TESTRUNNER
-// Cmd=$(Path)\dcc32 TestRunner -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e$(Scratch)\exe -n0$(Scratch)\dcu\win32 -dCONSOLE_TESTRUNNER
-// Cmd=$(Scratch)\exe\TestRunner
-// Cmd=$(Path)\dcc64 CompileAllUnits -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e$(Scratch)\exe -n0$(Scratch)\dcu\win64 -dCONSOLE_TESTRUNNER
-// Cmd=$(Path)\dcc64 TestRunner -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e$(Scratch)\exe -n0$(Scratch)\dcu\win64 -dCONSOLE_TESTRUNNER
-// Cmd=$(Scratch)\exe\TestRunner
-
 
