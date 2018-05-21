@@ -12,7 +12,7 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
   OnDestroy = FormDestroy
   DesignerMasterStyle = 0
   object Toolbar: TPanel
-    Align = Top
+    Align = MostTop
     Size.Width = 833.000000000000000000
     Size.Height = 97.000000000000000000
     Size.PlatformDefault = False
@@ -3198,7 +3198,7 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
     Top = 544
   end
   object lbEnvironments: TListBox
-    Align = Left
+    Align = MostLeft
     Position.Y = 97.000000000000000000
     Size.Width = 129.000000000000000000
     Size.Height = 535.000000000000000000
@@ -3229,11 +3229,11 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
     DataDetectorTypes = []
     Align = Client
     Size.Width = 704.000000000000000000
-    Size.Height = 535.000000000000000000
+    Size.Height = 513.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 9
     Viewport.Width = 700.000000000000000000
-    Viewport.Height = 531.000000000000000000
+    Viewport.Height = 509.000000000000000000
   end
   object SaveEnvironment: TSaveDialog
     Filter = 'MultiBuilder environment file|*$(mbenv)|Any file|*.*'
@@ -3246,6 +3246,16 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
     Options = [ofHideReadOnly, ofFileMustExist, ofEnableSizing]
     Left = 280
     Top = 496
+  end
+  object cbxCommands: TComboBox
+    Align = Top
+    Position.X = 129.000000000000000000
+    Position.Y = 97.000000000000000000
+    Size.Width = 704.000000000000000000
+    Size.Height = 22.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 16
+    OnChange = cbxCommandsChange
   end
   object ActionList1: TActionList
     Left = 496
