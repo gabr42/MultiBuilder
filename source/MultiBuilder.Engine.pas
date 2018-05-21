@@ -31,7 +31,7 @@ type
       WorkDir : string;
       Commands: TArray<string>;
       procedure Append(const values: TStringList);
-      function Execute: TExecuteResult;
+      function  Execute(parent: TMultiBuilderEngine; const environment: string): TExecuteResult;
     end;
   var
     FCountRunners  : integer;
@@ -42,8 +42,10 @@ type
     FSections      : TStringList;
     FVariables     : TEnvVarTable;
   strict protected
+    FOnCommandDone: TCommandDoneEvent;
     procedure CreateFolders(const environment: string);
     function  EvaluateMacro(const environment, name: string): string;
+    function  GetOnCommandDone: TCommandDoneEvent;
     function  GetOnJobDone: TJobDoneEvent;
     function  GetOnRunCompleted: TRunCompletedEvent;
     procedure LoadFromIni(memIni: TMemIniFile);
@@ -52,10 +54,12 @@ type
     procedure ReplaceMacros(const environment: string; values: TStringList); overload;
     function  ReplaceMacros(const environment, value: string): string; overload;
     procedure JobDone(const environment: string; const result: TExecuteResult);
+    procedure SetOnCommandDone(const value: TCommandDoneEvent);
     procedure SetOnJobDone(const value: TJobDoneEvent);
     procedure SetOnRunCompleted(const value: TRunCompletedEvent);
     procedure StartRunner(const environment: string; const projectConfig: TProjectConfig);
   protected
+    procedure SignalCommandDone_Asy(const environment: string; const result: TExecuteResult);
     class function Split(const kv: string; var key, value: string): boolean;
   public
     procedure AfterConstruction; override;
@@ -66,6 +70,7 @@ type
     function  LoadProject(const projFile: string): boolean;
     procedure Run;
     procedure RunSelected(const environment: string);
+    property OnCommandDone: TCommandDoneEvent read GetOnCommandDone write SetOnCommandDone;
     property OnJobDone: TJobDoneEvent read GetOnJobDone write SetOnJobDone;
     property OnRunCompleted: TRunCompletedEvent read GetOnRunCompleted write SetOnRunCompleted;
   end;
@@ -123,6 +128,11 @@ begin
     Result := '';
 end;
 
+function TMultiBuilderEngine.GetOnCommandDone: TCommandDoneEvent;
+begin
+  Result := FOnCommandDone;
+end;
+
 function TMultiBuilderEngine.GetOnJobDone: TJobDoneEvent;
 begin
   Result := FOnJobDone;
@@ -135,12 +145,20 @@ end;
 
 procedure TMultiBuilderEngine.JobDone(const environment: string;
   const result: TExecuteResult);
+var
+  jobResult: TExecuteResult;
 begin
-  if assigned(OnJobDone) then
-    OnJobDone(environment, result);
-  Dec(FCountRunners);
-  if (FCountRunners = 0) and assigned(OnRunCompleted) then
-    OnRunCompleted();
+  // make sure this is processed after last OnCommandDone event
+  jobResult := result;
+  TThread.ForceQueue(nil,
+    procedure
+    begin
+      if assigned(OnJobDone) then
+        OnJobDone(environment, jobResult);
+      Dec(FCountRunners);
+      if (FCountRunners = 0) and assigned(OnRunCompleted) then
+        OnRunCompleted();
+    end);
 end;
 
 function TMultiBuilderEngine.LoadFrom(const iniFile: string): boolean;
@@ -290,8 +308,13 @@ begin
     StartRunner(environment, projConfig);
   except
     on E: Exception do
-      JobDone(environment, TExecuteResult.Create('', 255, E.Message));
+      JobDone(environment, TExecuteResult.Create('Internal exception', 255, E.Message));
   end;
+end;
+
+procedure TMultiBuilderEngine.SetOnCommandDone(const value: TCommandDoneEvent);
+begin
+  FOnCommandDone := value;
 end;
 
 procedure TMultiBuilderEngine.SetOnJobDone(const value: TJobDoneEvent);
@@ -302,6 +325,20 @@ end;
 procedure TMultiBuilderEngine.SetOnRunCompleted(const value: TRunCompletedEvent);
 begin
   FOnRunCompleted := value;
+end;
+
+procedure TMultiBuilderEngine.SignalCommandDone_Asy(const environment: string;
+  const result: TExecuteResult);
+var
+  cmdResult: TExecuteResult;
+begin
+  cmdResult := result;
+  TThread.Queue(nil,
+    procedure
+    begin
+      if assigned(OnCommandDone) then
+        OnCommandDone(environment, cmdResult);
+    end);
 end;
 
 class function TMultiBuilderEngine.Split(const kv: string; var key, value: string):
@@ -328,7 +365,7 @@ begin
   future := TFuture<TExecuteResult>.Create(TObject(nil), TFunctionEvent<TExecuteResult>(nil),
     function: TExecuteResult
     begin
-      Result := threadConfig.Execute;
+      Result := threadConfig.Execute(Self, environment);
       TThread.Queue(nil,
         procedure
         begin
@@ -359,7 +396,8 @@ begin
   end;
 end;
 
-function TMultiBuilderEngine.TProjectConfig.Execute: TExecuteResult;
+function TMultiBuilderEngine.TProjectConfig.Execute(parent: TMultiBuilderEngine;
+  const environment: string): TExecuteResult;
 var
   cmd     : string;
   exitCode: integer;
@@ -367,6 +405,7 @@ var
 begin
   for cmd in Commands do begin
     MBPlatform.Execute(WorkDir, cmd, exitCode, output);
+    parent.SignalCommandDone_Asy(environment, TExecuteResult.Create(cmd, exitCode, output));
     if exitCode <> 0 then
       Exit(TExecuteResult.Create(cmd, exitCode, output));
   end;
