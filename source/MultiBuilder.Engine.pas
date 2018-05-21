@@ -21,14 +21,13 @@ type
   const
     CGlobalSectionName    = 'Global';  // used always
     CDefaultSectionName   = 'Default'; // used only if environment-specific section doesn't exist
-    CWorkingFolderKeyName = 'Folder';
+    CWorkingFolderKeyName = 'WorkingDir';
     CCommandKeyName       = 'Cmd';
     CForceDirKeyName      = 'ForceDir';
     CEnvironmentMacro     = 'EnvironmentName';
   type
     TEnvVarTable   = TDictionary<string, string>;
     TProjectConfig = record
-      WorkDir : string;
       Commands: TArray<string>;
       procedure Append(const values: TStringList);
       function  Execute(parent: TMultiBuilderEngine; const environment: string): TExecuteResult;
@@ -361,7 +360,6 @@ var
   threadConfig: TProjectConfig;
 begin
   threadConfig := projectConfig;
-  threadConfig.WorkDir := ReplaceMacros(environment, threadConfig.WorkDir);
   future := TFuture<TExecuteResult>.Create(TObject(nil), TFunctionEvent<TExecuteResult>(nil),
     function: TExecuteResult
     begin
@@ -387,8 +385,10 @@ begin
     if not TMultiBuilderEngine.Split(kv, name, value) then
       continue; //for
 
-    if SameText(name, CWorkingFolderKeyName) then
-      WorkDir := value
+    if SameText(name, CWorkingFolderKeyName) then begin
+      SetLength(Commands, Length(Commands) + 1);
+      Commands[High(Commands)] := '@' + value;
+    end
     else if SameText(name, CCommandKeyName) then begin
       SetLength(Commands, Length(Commands) + 1);
       Commands[High(Commands)] := value;
@@ -402,12 +402,23 @@ var
   cmd     : string;
   exitCode: integer;
   output  : string;
+  workDir : string;
 begin
+  workDir := '';
   for cmd in Commands do begin
-    MBPlatform.Execute(WorkDir, cmd, exitCode, output);
-    parent.SignalCommandDone_Asy(environment, TExecuteResult.Create(cmd, exitCode, output));
-    if exitCode <> 0 then
-      Exit(TExecuteResult.Create(cmd, exitCode, output));
+    if cmd.StartsWith('@') then begin
+      workDir := cmd;
+      Delete(workDir, 1, 1);
+      workDir := parent.ReplaceMacros(environment, workDir);
+    end
+    else if workDir = '' then
+      Exit(TExecuteResult.Create(cmd, 255, 'Working directory is not set (missing WorkingDir directive)'))
+    else begin
+      MBPlatform.Execute(WorkDir, cmd, exitCode, output);
+      parent.SignalCommandDone_Asy(environment, TExecuteResult.Create(cmd, exitCode, output));
+      if exitCode <> 0 then
+        Exit(TExecuteResult.Create(cmd, exitCode, output));
+    end;
   end;
   Result := TExecuteResult.Create('', 0, '');
 end;

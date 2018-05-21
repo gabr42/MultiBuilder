@@ -65,9 +65,9 @@ type
     procedure ReloadEngine;
     procedure ReloadProject;
   strict protected
-    function CleanEnvironment(const environment: string): string;
-    function FindEnvironment(const environment: string): integer;
-    function GetActiveEnv: string;
+    function  CleanEnvironment(const environment: string): string;
+    function  FindEnvironment(const environment: string): integer;
+    function  GetActiveEnv: string;
     procedure MarkEnvironment(const environment: string);
     procedure MarkCommandDone(const environment: string; const result: TExecuteResult);
     procedure MarkJobDone(const environment: string; const result: TExecuteResult);
