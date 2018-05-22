@@ -18,6 +18,7 @@ type
   TRunCompletedEvent = reference to procedure;
 
   IMultiBuilderEngine = interface ['{CAEEE225-C0B7-4C23-9575-93B06A4957A8}']
+    function  GetNumRunningProjects: integer;
     function  GetOnCommandDone: TCommandDoneEvent;
     function  GetOnJobDone: TJobDoneEvent;
     function  GetOnRunCompleted: TRunCompletedEvent;
@@ -26,11 +27,12 @@ type
     procedure SetOnRunCompleted(const value: TRunCompletedEvent);
   //
     procedure ClearProject;
-    function Environments: TArray<string>;
-    function LoadFrom(const iniFile: string): boolean;
-    function LoadProject(const projFile: string): boolean;
+    function  Environments: TArray<string>;
+    function  LoadFrom(const iniFile: string): boolean;
+    function  LoadProject(const projFile: string): boolean;
     procedure Run;
     procedure RunSelected(const environment: string);
+    property NumRunningProjects: integer read GetNumRunningProjects;
     property OnCommandDone: TCommandDoneEvent read GetOnCommandDone write SetOnCommandDone;
     property OnJobDone: TJobDoneEvent read GetOnJobDone write SetOnJobDone;
     property OnRunCompleted: TRunCompletedEvent read GetOnRunCompleted write

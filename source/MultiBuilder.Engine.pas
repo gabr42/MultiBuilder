@@ -13,7 +13,9 @@ uses
   System.SysUtils, System.StrUtils, System.Classes, System.IniFiles,
   System.Generics.Defaults, System.Generics.Collections,
   System.Threading,
-  MultiBuilder.Platform;
+  MultiBuilder.Platform,
+  MultiBuilder.Engine.Variables.Intf,
+  MultiBuilder.Engine.Variables;
 
 type
   TMultiBuilderEngine = class(TInterfacedObject, IMultiBuilderEngine)
@@ -26,24 +28,24 @@ type
     CForceDirKeyName      = 'ForceDir';
     CEnvironmentMacro     = 'EnvironmentName';
   type
-    TEnvVarTable   = TDictionary<string, string>;
     TProjectConfig = record
       Commands: TArray<string>;
       procedure Append(const values: TStringList);
-      function  Execute(parent: TMultiBuilderEngine; const environment: string): TExecuteResult;
+      function  Execute_Asy(parent: TMultiBuilderEngine; const environment: string):
+        TExecuteResult;
     end;
   var
     FCountRunners  : integer;
     FEnvironments  : TArray<string>;
+    FOnCommandDone : TCommandDoneEvent;
     FOnJobDone     : TJobDoneEvent;
     FOnRunCompleted: TRunCompletedEvent;
     FProject       : TMemIniFile;
     FSections      : TStringList;
-    FVariables     : TEnvVarTable;
+    FVariables     : IMultiBuilderVariables;
   strict protected
-    FOnCommandDone: TCommandDoneEvent;
     procedure CreateFolders(const environment: string);
-    function  EvaluateMacro(const environment, name: string): string;
+    function  GetNumRunningProjects: integer;
     function  GetOnCommandDone: TCommandDoneEvent;
     function  GetOnJobDone: TJobDoneEvent;
     function  GetOnRunCompleted: TRunCompletedEvent;
@@ -69,6 +71,7 @@ type
     function  LoadProject(const projFile: string): boolean;
     procedure Run;
     procedure RunSelected(const environment: string);
+    property NumRunningProjects: integer read GetNumRunningProjects;
     property OnCommandDone: TCommandDoneEvent read GetOnCommandDone write SetOnCommandDone;
     property OnJobDone: TJobDoneEvent read GetOnJobDone write SetOnJobDone;
     property OnRunCompleted: TRunCompletedEvent read GetOnRunCompleted write SetOnRunCompleted;
@@ -85,14 +88,13 @@ procedure TMultiBuilderEngine.AfterConstruction;
 begin
   inherited;
   FSections := TStringList.Create;
-  FVariables := TEnvVarTable.Create(TIStringComparer.Ordinal);
+  FVariables := CreateMBVariables(CGlobalSectionName, CDefaultSectionName, CEnvironmentMacro);
 end;
 
 procedure TMultiBuilderEngine.BeforeDestruction;
 begin
   ClearProject;
   FreeAndNil(FSections);
-  FreeAndNil(FVariables);
   inherited;
 end;
 
@@ -106,7 +108,7 @@ var
   folder : string;
   folders: TArray<string>;
 begin
-  folders := EvaluateMacro(environment, CForceDirKeyName).Split([';'], '"', '"');
+  folders := FVariables.Evaluate(environment, CForceDirKeyName).Split([';'], '"', '"');
   for folder in folders do
     ForceDirectories(ReplaceMacros(environment, folder));
 end;
@@ -116,15 +118,9 @@ begin
   Result := FEnvironments;
 end;
 
-function TMultiBuilderEngine.EvaluateMacro(const environment, name: string): string;
+function TMultiBuilderEngine.GetNumRunningProjects: integer;
 begin
-  if SameText(name, CEnvironmentMacro) then
-    Result := environment
-  else if (not FVariables.TryGetValue(environment + '/' + name, Result))
-           and (not FVariables.TryGetValue(CDefaultSectionName + '/' + name, Result))
-           and (not FVariables.TryGetValue(CGlobalSectionName + '/' + name, Result))
-  then
-    Result := '';
+  Result := FCountRunners;
 end;
 
 function TMultiBuilderEngine.GetOnCommandDone: TCommandDoneEvent;
@@ -192,24 +188,27 @@ var
   values  : TStringList;
 begin
   memIni.ReadSections(FSections);
-  SetLength(FEnvironments, FSections.Count);
-  FVariables.Clear;
-  iEnv := 0;
-  values := TStringList.Create;
+  FVariables.BeginUpdate;
   try
-    for sEnv in FSections do begin
-      if not (SameText(sEnv, CGlobalSectionName) or SameText(sEnv, CDefaultSectionName)) then begin
-        FEnvironments[iEnv] := sEnv;
-        Inc(iEnv);
+    FVariables.Clear;
+    SetLength(FEnvironments, FSections.Count);
+    iEnv := 0;
+    values := TStringList.Create;
+    try
+      for sEnv in FSections do begin
+        if not (SameText(sEnv, CGlobalSectionName) or SameText(sEnv, CDefaultSectionName)) then begin
+          FEnvironments[iEnv] := sEnv;
+          Inc(iEnv);
+        end;
+        memIni.ReadSectionValues(sEnv, values);
+        for sNameVar in values do begin
+          if Split(sNameVar, sName, sVar) then
+            FVariables.Add(sEnv, sName, sVar);
+        end;
       end;
-      memIni.ReadSectionValues(sEnv, values);
-      for sNameVar in values do begin
-        if Split(sNameVar, sName, sVar) then
-          FVariables.Add(sEnv + '/' + sName, sVar);
-      end;
-    end;
-  finally FreeAndNil(values); end;
-  SetLength(FEnvironments, iEnv);
+    finally FreeAndNil(values); end;
+    SetLength(FEnvironments, iEnv);
+  finally FVariables.EndUpdate; end;
 end;
 
 function TMultiBuilderEngine.LoadProject(const projFile: string): boolean;
@@ -266,6 +265,7 @@ var
   p1  : integer;
   p2  : integer;
 begin
+  //Used from multiple threads
   Result := value;
   p1 := 1;
   repeat
@@ -277,7 +277,7 @@ begin
       break; //repeat
     name := Copy(Result, p1 + 2, p2 - p1 - 2);
     Delete(Result, p1, p2 - p1 + 1);
-    Insert(EvaluateMacro(environment, name), Result, p1);
+    Insert(FVariables.Evaluate(environment, name), Result, p1);
   until false;
 end;
 
@@ -291,8 +291,6 @@ begin
     Exit;
   end;
 
-  FCountRunners := Length(FEnvironments);
-
   for sEnv in FEnvironments do
     RunSelected(sEnv);
 end;
@@ -304,6 +302,7 @@ begin
   PrepareProjectConfig(environment, projConfig);
   try
     CreateFolders(environment);
+    Inc(FCountRunners);
     StartRunner(environment, projConfig);
   except
     on E: Exception do
@@ -363,7 +362,7 @@ begin
   future := TFuture<TExecuteResult>.Create(TObject(nil), TFunctionEvent<TExecuteResult>(nil),
     function: TExecuteResult
     begin
-      Result := threadConfig.Execute(Self, environment);
+      Result := threadConfig.Execute_Asy(Self, environment);
       TThread.Queue(nil,
         procedure
         begin
@@ -396,8 +395,8 @@ begin
   end;
 end;
 
-function TMultiBuilderEngine.TProjectConfig.Execute(parent: TMultiBuilderEngine;
-  const environment: string): TExecuteResult;
+function TMultiBuilderEngine.TProjectConfig.Execute_Asy(parent:
+  TMultiBuilderEngine; const environment: string): TExecuteResult;
 var
   cmd     : string;
   exitCode: integer;

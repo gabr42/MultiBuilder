@@ -18,37 +18,41 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
     Size.PlatformDefault = False
     TabOrder = 1
     object tbEditEnvironment: TButton
+      Action = actEditEnvironment
+      Enabled = True
+      ImageIndex = -1
       Position.X = 128.000000000000000000
       Position.Y = 11.000000000000000000
       Size.Width = 97.000000000000000000
       Size.Height = 78.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 1
-      Text = 'Edit Environment'
       TextSettings.WordWrap = True
-      OnClick = tbEditEnvironmentClick
     end
     object tbLoadProject: TButton
+      Action = actLoadProject
+      Enabled = True
+      ImageIndex = -1
       Position.X = 272.000000000000000000
       Position.Y = 11.000000000000000000
       Size.Width = 97.000000000000000000
       Size.Height = 78.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 2
-      Text = 'Load Project'
       TextSettings.WordWrap = True
-      OnClick = tbLoadProjectClick
     end
     object tbEditProject: TButton
+      Action = actEditProject
+      Cancel = True
+      Enabled = True
+      ImageIndex = -1
       Position.X = 384.000000000000000000
       Position.Y = 11.000000000000000000
       Size.Width = 97.000000000000000000
       Size.Height = 78.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 3
-      Text = 'Edit Project'
       TextSettings.WordWrap = True
-      OnClick = tbEditProjectClick
     end
     object tbRun: TButton
       Action = actRun
@@ -81,15 +85,16 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
       ShowHint = True
     end
     object tbLoadEnvironment: TButton
+      Action = actLoadEnvironment
+      Enabled = True
+      ImageIndex = -1
       Position.X = 16.000000000000000000
       Position.Y = 11.000000000000000000
       Size.Width = 97.000000000000000000
       Size.Height = 78.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 0
-      Text = 'Load Environment'
       TextSettings.WordWrap = True
-      OnClick = tbLoadEnvironmentClick
     end
   end
   object StyleBook1: TStyleBook
@@ -3273,6 +3278,26 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
       ShortCut = 32888
       OnExecute = actRunSelectedExecute
       OnUpdate = actRunSelectedUpdate
+    end
+    object actLoadEnvironment: TAction
+      Text = 'Load Environment'
+      OnExecute = actLoadEnvironmentExecute
+      OnUpdate = EnableWhenNoJobs
+    end
+    object actEditEnvironment: TAction
+      Text = 'Edit Environment'
+      OnExecute = actEditEnvironmentExecute
+      OnUpdate = EnableWhenNoJobs
+    end
+    object actLoadProject: TAction
+      Text = 'Load Project'
+      OnExecute = actLoadProjectExecute
+      OnUpdate = EnableWhenNoJobs
+    end
+    object actEditProject: TAction
+      Text = 'Edit Project'
+      OnExecute = actEditProjectExecute
+      OnUpdate = EnableWhenNoJobs
     end
   end
 end

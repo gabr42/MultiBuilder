@@ -38,6 +38,15 @@ type
     SaveEnvironment: TSaveDialog;
     OpenEnvironment: TOpenDialog;
     cbxCommands: TComboBox;
+    actLoadEnvironment: TAction;
+    actEditEnvironment: TAction;
+    actLoadProject: TAction;
+    actEditProject: TAction;
+    procedure actEditEnvironmentExecute(Sender: TObject);
+    procedure actEditProjectExecute(Sender: TObject);
+    procedure actLoadEnvironmentExecute(Sender: TObject);
+    procedure actLoadProjectExecute(Sender: TObject);
+    procedure EnableWhenNoJobs(Sender: TObject);
     procedure actRunExecute(Sender: TObject);
     procedure actRunSelectedExecute(Sender: TObject);
     procedure actRunSelectedUpdate(Sender: TObject);
@@ -46,10 +55,6 @@ type
     procedure FormDestroy(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure lbEnvironmentsChange(Sender: TObject);
-    procedure tbEditEnvironmentClick(Sender: TObject);
-    procedure tbEditProjectClick(Sender: TObject);
-    procedure tbLoadEnvironmentClick(Sender: TObject);
-    procedure tbLoadProjectClick(Sender: TObject);
   private
   const
     CMarkOK      = #$2611;
@@ -90,6 +95,88 @@ type
   TExecuteResultHelper = record helper for TExecuteResult
     function ExitCodeStr: string;
   end;
+
+procedure TfrmMultiBuilderMain.actEditEnvironmentExecute(Sender: TObject);
+var
+  changed    : boolean;
+  frmProjEdit: TfrmEditProject;
+  projContent: TStringList;
+begin
+  projContent := TStringList.Create;
+  try
+    changed := false;
+    if (FProjectFile <> '') and FileExists(FProjectFile) then
+      projContent.LoadFromFile(FProjectFile);
+
+    frmProjEdit := TfrmEditProject.Create(Self);
+    try
+      frmProjEdit.Project := projContent.Text;
+      if frmProjEdit.ShowModal = mrOK then begin
+        projContent.Text := frmProjEdit.Project;
+        changed := true;
+      end;
+    finally FreeAndNil(frmProjEdit); end;
+
+    if changed then begin
+      if FProjectFile = '' then begin
+        if not SaveProject.Execute then
+          Exit;
+        FProjectFile := SaveProject.FileName;
+      end;
+      projContent.SaveToFile(FProjectFile);
+      ReloadProject;
+    end;
+  finally FreeAndNil(projContent); end;
+end;
+
+procedure TfrmMultiBuilderMain.actEditProjectExecute(Sender: TObject);
+var
+  changed    : boolean;
+  frmProjEdit: TfrmEditProject;
+  projContent: TStringList;
+begin
+  projContent := TStringList.Create;
+  try
+    changed := false;
+    if (FProjectFile <> '') and FileExists(FProjectFile) then
+      projContent.LoadFromFile(FProjectFile);
+
+    frmProjEdit := TfrmEditProject.Create(Self);
+    try
+      frmProjEdit.Project := projContent.Text;
+      if frmProjEdit.ShowModal = mrOK then begin
+        projContent.Text := frmProjEdit.Project;
+        changed := true;
+      end;
+    finally FreeAndNil(frmProjEdit); end;
+
+    if changed then begin
+      if FProjectFile = '' then begin
+        if not SaveProject.Execute then
+          Exit;
+        FProjectFile := SaveProject.FileName;
+      end;
+      projContent.SaveToFile(FProjectFile);
+      ReloadProject;
+    end;
+  finally FreeAndNil(projContent); end;
+end;
+
+procedure TfrmMultiBuilderMain.actLoadEnvironmentExecute(Sender: TObject);
+begin
+  if OpenEnvironment.Execute then begin
+    FEngineConfig := OpenEnvironment.FileName;
+    ReloadEngine;
+  end;
+end;
+
+procedure TfrmMultiBuilderMain.actLoadProjectExecute(Sender: TObject);
+begin
+  if OpenProject.Execute then begin
+    FProjectFile := OpenProject.FileName;
+    ReloadProject;
+  end;
+end;
 
 procedure TfrmMultiBuilderMain.actRunExecute(Sender: TObject);
 var
@@ -159,6 +246,11 @@ begin
   Result := environment;
   if (Result <> '') and ((Result[1] = CMarkOK) or (Result[1] = CMarkError) or (Result[1] = CMarkRunning)) then
     Delete(Result, 1, 2);
+end;
+
+procedure TfrmMultiBuilderMain.EnableWhenNoJobs(Sender: TObject);
+begin
+  (Sender as TAction).Enabled := Toolbar.Enabled and (FEngine.NumRunningProjects = 0);
 end;
 
 function TfrmMultiBuilderMain.FindEnvironment(const environment: string): integer;
@@ -334,83 +426,6 @@ begin
   else begin
     Caption := 'MultiBuilder';
     FEngine.ClearProject;
-  end;
-end;
-
-procedure TfrmMultiBuilderMain.tbEditEnvironmentClick(Sender: TObject);
-var
-  changed   : boolean;
-  frmEnvEdit: TfrmEditEnvironment;
-  iniContent: TStringList;
-begin
-  iniContent := TStringList.Create;
-  try
-    changed := false;
-    if FileExists(FEngineConfig) then
-      iniContent.LoadFromFile(FEngineConfig);
-
-    frmEnvEdit := TfrmEditEnvironment.Create(Self);
-    try
-      frmEnvEdit.Environment := iniContent.Text;
-      if frmEnvEdit.ShowModal = mrOK then begin
-        iniContent.Text := frmEnvEdit.Environment;
-         changed := true;
-      end;
-    finally FreeAndNil(frmEnvEdit); end;
-
-    if changed then begin
-      iniContent.SaveToFile(FEngineConfig);
-      ReloadEngine;
-    end;
-  finally FreeAndNil(iniContent); end;
-end;
-
-procedure TfrmMultiBuilderMain.tbEditProjectClick(Sender: TObject);
-var
-  changed    : boolean;
-  frmProjEdit: TfrmEditProject;
-  projContent: TStringList;
-begin
-  projContent := TStringList.Create;
-  try
-    changed := false;
-    if (FProjectFile <> '') and FileExists(FProjectFile) then
-      projContent.LoadFromFile(FProjectFile);
-
-    frmProjEdit := TfrmEditProject.Create(Self);
-    try
-      frmProjEdit.Project := projContent.Text;
-      if frmProjEdit.ShowModal = mrOK then begin
-        projContent.Text := frmProjEdit.Project;
-        changed := true;
-      end;
-    finally FreeAndNil(frmProjEdit); end;
-
-    if changed then begin
-      if FProjectFile = '' then begin
-        if not SaveProject.Execute then
-          Exit;
-        FProjectFile := SaveProject.FileName;
-      end;
-      projContent.SaveToFile(FProjectFile);
-      ReloadProject;
-    end;
-  finally FreeAndNil(projContent); end;
-end;
-
-procedure TfrmMultiBuilderMain.tbLoadEnvironmentClick(Sender: TObject);
-begin
-  if OpenEnvironment.Execute then begin
-    FEngineConfig := OpenEnvironment.FileName;
-    ReloadEngine;
-  end;
-end;
-
-procedure TfrmMultiBuilderMain.tbLoadProjectClick(Sender: TObject);
-begin
-  if OpenProject.Execute then begin
-    FProjectFile := OpenProject.FileName;
-    ReloadProject;
   end;
 end;
 
