@@ -11,10 +11,10 @@ type
     function Process(const origResult: TExecuteResult): TExecuteResult;
   end;
 
-  TMultiBuilderFilterFactory = TFunc<IMultiBuilderFilter>;
+  TMultiBuilderFilterFactory = TFunc<string, IMultiBuilderFilter>;
 
   IMultiBuilderFilterManager = interface ['{44D46644-B49C-46BE-9871-2382F45A605D}']
-    function  CreateNewInstance(const filterName: string): IMultiBuilderFilter;
+    function  CreateNewInstance(const filterName, filterParams: string): IMultiBuilderFilter;
     procedure RegisterFilter(const filterName: string; const filterFactory: TMultiBuilderFilterFactory);
   end;
 
@@ -33,7 +33,8 @@ type
   public
     constructor Create;
     destructor  Destroy; override;
-    function  CreateNewInstance(const filterName: string): IMultiBuilderFilter;
+    function  CreateNewInstance(const filterName, filterParams: string):
+      IMultiBuilderFilter;
     procedure RegisterFilter(const filterName: string;
       const filterFactory: TMultiBuilderFilterFactory);
   end;
@@ -53,15 +54,15 @@ begin
   inherited;
 end;
 
-function TMultiBuilderFilterManager.CreateNewInstance(const filterName: string):
-  IMultiBuilderFilter;
+function TMultiBuilderFilterManager.CreateNewInstance(const filterName,
+  filterParams: string): IMultiBuilderFilter;
 var
   filterFactory: TMultiBuilderFilterFactory;
 begin
   MonitorEnter(FFactory);
   try
     if FFactory.TryGetValue(filterName, filterFactory) then
-      Result := filterFactory();
+      Result := filterFactory(filterParams);
   finally MonitorExit(FFactory); end;
 end;
 

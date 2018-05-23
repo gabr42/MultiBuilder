@@ -50,7 +50,8 @@ type
     FVariables     : IMultiBuilderVariables;
   strict protected
     procedure CreateFolders(const environment: string);
-    function GetFilterName(const exeName: string): string;
+    procedure GetFilterNameAndParams(const exeName: string; var name, params:
+      string);
     function  GetNumRunningProjects: integer;
     function  GetOnCommandDone: TCommandDoneEvent;
     function  GetOnJobDone: TJobDoneEvent;
@@ -127,12 +128,23 @@ begin
   Result := FEnvironments;
 end;
 
-function TMultiBuilderEngine.GetFilterName(const exeName: string): string;
+procedure TMultiBuilderEngine.GetFilterNameAndParams(const exeName: string;
+  var name, params: string);
+var
+  parts: TArray<string>;
 begin
   MonitorEnter(FFilterMap);
   try
-    if not FFilterMap.TryGetValue(exeName, Result) then
-      Result := '';
+    if (not FFilterMap.TryGetValue(exeName, name)) or (Trim(name) = '') then begin
+      name := '';
+      params := '';
+    end
+    else begin
+      parts := name.Split([' '], '"', '"');
+      name := parts[0];
+      Delete(parts, 0, 1);
+      params := string.Join(' ', parts);
+    end;
   finally MonitorExit(FFilterMap); end;
 end;
 
@@ -381,6 +393,7 @@ end;
 procedure TMultiBuilderEngine.StartRunner(const environment: string; const projectConfig: TProjectConfig);
 var
   future      : IFuture<TExecuteResult>;
+  params: string;
   threadConfig: TProjectConfig;
 begin
   threadConfig := projectConfig;
@@ -395,10 +408,14 @@ begin
         function (command: string; exitCode: integer; output: string): TExecuteResult
         var
           filter: IMultiBuilderFilter;
+          name  : string;
+          params: string;
         begin
           Result := TExecuteResult.Create(command, exitCode, output);
-          filter := FilterManager.CreateNewInstance(
-            GetFilterName(ExtractFileName((command + ' !').Split([' '], '"', '"')[0])));
+          GetFilterNameAndParams(
+            ExtractFileName((command + ' !').Split([' '], '"', '"')[0]),
+            name, params);
+          filter := FilterManager.CreateNewInstance(name, params);
           if assigned(filter) then
             Result := filter.Process(Result);
         end,
