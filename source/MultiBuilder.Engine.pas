@@ -32,8 +32,8 @@ type
     TProjectConfig = record
       Commands: TArray<string>;
       procedure Append(const values: TStringList);
-      function  Execute_Asy(parent: TMultiBuilderEngine; const environment: string):
-        TExecuteResult;
+      function Execute_Asy(const environment: string; replaceMacroProc: TFunc<string, string,
+        string>; onCommandDoneProc: TProc<string, TExecuteResult>): TExecuteResult;
     end;
   var
     FCountRunners  : integer;
@@ -363,7 +363,16 @@ begin
   future := TFuture<TExecuteResult>.Create(TObject(nil), TFunctionEvent<TExecuteResult>(nil),
     function: TExecuteResult
     begin
-      Result := threadConfig.Execute_Asy(Self, environment);
+      Result := threadConfig.Execute_Asy(environment,
+        function (environment, variable: string): string
+        begin
+          Result := ReplaceMacros(environment, variable);
+        end,
+        procedure (environment: string; result: TExecuteResult)
+        begin
+          SignalCommandDone_Asy(environment, result);
+        end);
+
       TThread.Queue(nil,
         procedure
         begin
@@ -396,8 +405,9 @@ begin
   end;
 end;
 
-function TMultiBuilderEngine.TProjectConfig.Execute_Asy(parent:
-  TMultiBuilderEngine; const environment: string): TExecuteResult;
+function TMultiBuilderEngine.TProjectConfig.Execute_Asy(const environment: string;
+  replaceMacroProc: TFunc<string, string, string>;
+  onCommandDoneProc: TProc<string, TExecuteResult>): TExecuteResult;
 var
   cmd     : string;
   exitCode: integer;
@@ -409,13 +419,13 @@ begin
     if cmd.StartsWith('@') then begin
       workDir := cmd;
       Delete(workDir, 1, 1);
-      workDir := parent.ReplaceMacros(environment, workDir);
+      workDir := replaceMacroProc(environment, workDir);
     end
     else if workDir = '' then
       Exit(TExecuteResult.Create(cmd, 255, 'Working directory is not set (missing WorkingDir directive)'))
     else begin
       MBPlatform.Execute(WorkDir, cmd, exitCode, output);
-      parent.SignalCommandDone_Asy(environment, TExecuteResult.Create(cmd, exitCode, output));
+      onCommandDoneProc(environment, TExecuteResult.Create(cmd, exitCode, output));
       if exitCode <> 0 then
         Exit(TExecuteResult.Create(cmd, exitCode, output));
     end;
