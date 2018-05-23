@@ -32,8 +32,10 @@ type
     TProjectConfig = record
       Commands: TArray<string>;
       procedure Append(const values: TStringList);
-      function Execute_Asy(const environment: string; replaceMacroProc: TFunc<string, string,
-        string>; onCommandDoneProc: TProc<string, TExecuteResult>): TExecuteResult;
+      function Execute_Asy(const environment: string;
+        replaceMacroProc: TFunc<string, string, string>;
+        filterProc: TFunc<string, integer, string, TExecuteResult>;
+        onCommandDoneProc: TProc<string, TExecuteResult>): TExecuteResult;
     end;
   var
     FCountRunners  : integer;
@@ -61,7 +63,6 @@ type
     procedure SetOnRunCompleted(const value: TRunCompletedEvent);
     procedure StartRunner(const environment: string; const projectConfig: TProjectConfig);
   protected
-    procedure SignalCommandDone_Asy(const environment: string; const result: TExecuteResult);
     class function Split(const kv: string; var key, value: string): boolean;
   public
     procedure AfterConstruction; override;
@@ -326,20 +327,6 @@ begin
   FOnRunCompleted := value;
 end;
 
-procedure TMultiBuilderEngine.SignalCommandDone_Asy(const environment: string;
-  const result: TExecuteResult);
-var
-  cmdResult: TExecuteResult;
-begin
-  cmdResult := result;
-  TThread.Queue(nil,
-    procedure
-    begin
-      if assigned(OnCommandDone) then
-        OnCommandDone(environment, cmdResult);
-    end);
-end;
-
 class function TMultiBuilderEngine.Split(const kv: string; var key, value: string):
   boolean;
 var
@@ -368,9 +355,21 @@ begin
         begin
           Result := ReplaceMacros(environment, variable);
         end,
-        procedure (environment: string; result: TExecuteResult)
+        function (command: string; exitCode: integer; output: string): TExecuteResult
         begin
-          SignalCommandDone_Asy(environment, result);
+          Result := TExecuteResult.Create(command, exitCode, output);
+        end,
+        procedure (environment: string; result: TExecuteResult)
+        var
+          cmdResult: TExecuteResult;
+        begin
+          cmdResult := result;
+          TThread.Queue(nil,
+            procedure
+            begin
+              if assigned(OnCommandDone) then
+                OnCommandDone(environment, cmdResult);
+            end);
         end);
 
       TThread.Queue(nil,
@@ -407,6 +406,7 @@ end;
 
 function TMultiBuilderEngine.TProjectConfig.Execute_Asy(const environment: string;
   replaceMacroProc: TFunc<string, string, string>;
+  filterProc: TFunc<string, integer, string, TExecuteResult>;
   onCommandDoneProc: TProc<string, TExecuteResult>): TExecuteResult;
 var
   cmd     : string;
@@ -425,7 +425,7 @@ begin
       Exit(TExecuteResult.Create(cmd, 255, 'Working directory is not set (missing WorkingDir directive)'))
     else begin
       MBPlatform.Execute(WorkDir, cmd, exitCode, output);
-      onCommandDoneProc(environment, TExecuteResult.Create(cmd, exitCode, output));
+      onCommandDoneProc(environment, filterProc(cmd, exitCode, output));
       if exitCode <> 0 then
         Exit(TExecuteResult.Create(cmd, exitCode, output));
     end;
