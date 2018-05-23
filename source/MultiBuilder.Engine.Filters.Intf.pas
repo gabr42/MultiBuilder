@@ -3,10 +3,12 @@ unit MultiBuilder.Engine.Filters.Intf;
 interface
 
 uses
-  System.SysUtils;
+  System.SysUtils,
+  MultiBuilder.Engine.Intf;
 
 type
   IMultiBuilderFilter = interface ['{993D98BE-5C92-4764-A9B7-1537554C57AA}']
+    function Process(const origResult: TExecuteResult): TExecuteResult;
   end;
 
   TMultiBuilderFilterFactory = TFunc<IMultiBuilderFilter>;
@@ -22,7 +24,7 @@ var
 implementation
 
 uses
-  System.Generics.Collections;
+  System.Generics.Defaults, System.Generics.Collections;
 
 type
   TMultiBuilderFilterManager = class(TInterfacedObject, IMultiBuilderFilterManager)
@@ -41,7 +43,8 @@ type
 constructor TMultiBuilderFilterManager.Create;
 begin
   inherited;
-  FFactory := TDictionary<string, TMultiBuilderFilterFactory>.Create;
+  FFactory := TDictionary<string, TMultiBuilderFilterFactory>.Create(
+                TIStringComparer.Ordinal);
 end;
 
 destructor TMultiBuilderFilterManager.Destroy;

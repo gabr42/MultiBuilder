@@ -24,6 +24,7 @@ type
   const
     CGlobalSectionName    = 'Global';  // used always
     CDefaultSectionName   = 'Default'; // used only if environment-specific section doesn't exist
+    CFiltersSectionName   = 'Filters';
     CWorkingFolderKeyName = 'WorkingDir';
     CCommandKeyName       = 'Cmd';
     CForceDirKeyName      = 'ForceDir';
@@ -40,6 +41,7 @@ type
   var
     FCountRunners  : integer;
     FEnvironments  : TArray<string>;
+    FFilterMap     : TDictionary<string,string>;
     FOnCommandDone : TCommandDoneEvent;
     FOnJobDone     : TJobDoneEvent;
     FOnRunCompleted: TRunCompletedEvent;
@@ -48,6 +50,7 @@ type
     FVariables     : IMultiBuilderVariables;
   strict protected
     procedure CreateFolders(const environment: string);
+    function GetFilterName(const exeName: string): string;
     function  GetNumRunningProjects: integer;
     function  GetOnCommandDone: TCommandDoneEvent;
     function  GetOnJobDone: TJobDoneEvent;
@@ -58,6 +61,7 @@ type
     procedure ReplaceMacros(const environment: string; values: TStringList); overload;
     function  ReplaceMacros(const environment, value: string): string; overload;
     procedure JobDone(const environment: string; const result: TExecuteResult);
+    procedure LoadFilterMap;
     procedure SetOnCommandDone(const value: TCommandDoneEvent);
     procedure SetOnJobDone(const value: TJobDoneEvent);
     procedure SetOnRunCompleted(const value: TRunCompletedEvent);
@@ -91,11 +95,13 @@ begin
   inherited;
   FSections := TStringList.Create;
   FVariables := CreateMBVariables(CGlobalSectionName, CDefaultSectionName, CEnvironmentMacro);
+  FFilterMap := TDictionary<string, string>.Create(TIStringComparer.Ordinal);
 end;
 
 procedure TMultiBuilderEngine.BeforeDestruction;
 begin
   ClearProject;
+  FreeAndNil(FFilterMap);
   FreeAndNil(FSections);
   inherited;
 end;
@@ -103,6 +109,7 @@ end;
 procedure TMultiBuilderEngine.ClearProject;
 begin
   FreeAndNil(FProject);
+  FFilterMap.Clear;
 end;
 
 procedure TMultiBuilderEngine.CreateFolders(const environment: string);
@@ -118,6 +125,15 @@ end;
 function TMultiBuilderEngine.Environments: TArray<string>;
 begin
   Result := FEnvironments;
+end;
+
+function TMultiBuilderEngine.GetFilterName(const exeName: string): string;
+begin
+  MonitorEnter(FFilterMap);
+  try
+    if not FFilterMap.TryGetValue(exeName, Result) then
+      Result := '';
+  finally MonitorExit(FFilterMap); end;
 end;
 
 function TMultiBuilderEngine.GetNumRunningProjects: integer;
@@ -156,6 +172,26 @@ begin
       if (FCountRunners = 0) and assigned(OnRunCompleted) then
         OnRunCompleted();
     end);
+end;
+
+procedure TMultiBuilderEngine.LoadFilterMap;
+var
+  kv    : TArray<string>;
+  s     : string;
+  values: TStringList;
+begin
+  MonitorEnter(FFilterMap);
+  try
+    values := TStringList.Create;
+    try
+      FProject.ReadSectionValues(CFiltersSectionName, values);
+      for s in values do begin
+        kv := s.Split(['=']);
+        if Length(kv) = 2 then
+          FFilterMap.Add(kv[0], kv[1]);
+      end;
+    finally FreeAndNil(values); end;
+  finally MonitorExit(FFilterMap); end;
 end;
 
 function TMultiBuilderEngine.LoadFrom(const iniFile: string): boolean;
@@ -223,6 +259,7 @@ begin
 
   try
     FProject := TMemIniFile.Create(projFile);
+    LoadFilterMap;
   except
     ClearProject;
     Result := false;
@@ -356,8 +393,14 @@ begin
           Result := ReplaceMacros(environment, variable);
         end,
         function (command: string; exitCode: integer; output: string): TExecuteResult
+        var
+          filter: IMultiBuilderFilter;
         begin
           Result := TExecuteResult.Create(command, exitCode, output);
+          filter := FilterManager.CreateNewInstance(
+            GetFilterName(ExtractFileName((command + ' !').Split([' '], '"', '"')[0])));
+          if assigned(filter) then
+            Result := filter.Process(Result);
         end,
         procedure (environment: string; result: TExecuteResult)
         var
@@ -410,6 +453,7 @@ function TMultiBuilderEngine.TProjectConfig.Execute_Asy(const environment: strin
   onCommandDoneProc: TProc<string, TExecuteResult>): TExecuteResult;
 var
   cmd     : string;
+  cmdRes  : TExecuteResult;
   exitCode: integer;
   output  : string;
   workDir : string;
@@ -421,11 +465,14 @@ begin
       Delete(workDir, 1, 1);
       workDir := replaceMacroProc(environment, workDir);
     end
-    else if workDir = '' then
-      Exit(TExecuteResult.Create(cmd, 255, 'Working directory is not set (missing WorkingDir directive)'))
     else begin
-      MBPlatform.Execute(WorkDir, cmd, exitCode, output);
-      onCommandDoneProc(environment, filterProc(cmd, exitCode, output));
+      if workDir = '' then
+        cmdRes := TExecuteResult.Create(cmd, 255, 'Working directory is not set (missing WorkingDir directive)')
+      else begin
+        MBPlatform.Execute(WorkDir, cmd, exitCode, output);
+        cmdRes := filterProc(cmd, exitCode, output)
+      end;
+      onCommandDoneProc(environment, cmdRes);
       if exitCode <> 0 then
         Exit(TExecuteResult.Create(cmd, exitCode, output));
     end;
