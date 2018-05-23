@@ -132,9 +132,6 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="MultiBuilder.Platform.pas"/>
-        <DCCReference Include="MultiBuilder.Engine.pas"/>
-        <DCCReference Include="MultiBuilder.Engine.Intf.pas"/>
         <DCCReference Include="MultiBuilder.Main.pas">
             <Form>frmMultiBuilderMain</Form>
         </DCCReference>
@@ -144,9 +141,6 @@
         <DCCReference Include="MultiBuilder.Editor.Project.pas">
             <Form>frmEditProject</Form>
         </DCCReference>
-        <DCCReference Include="MultiBuilder.Engine.Filters.pas"/>
-        <DCCReference Include="MultiBuilder.Engine.Variables.pas"/>
-        <DCCReference Include="MultiBuilder.Engine.Variables.Intf.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

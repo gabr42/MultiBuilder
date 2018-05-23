@@ -15,7 +15,8 @@ uses
   System.Threading,
   MultiBuilder.Platform,
   MultiBuilder.Engine.Variables.Intf,
-  MultiBuilder.Engine.Variables;
+  MultiBuilder.Engine.Variables,
+  MultiBuilder.Engine.Filters;
 
 type
   TMultiBuilderEngine = class(TInterfacedObject, IMultiBuilderEngine)
