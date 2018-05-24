@@ -98,35 +98,30 @@ type
 
 procedure TfrmMultiBuilderMain.actEditEnvironmentExecute(Sender: TObject);
 var
-  changed    : boolean;
-  frmProjEdit: TfrmEditProject;
-  projContent: TStringList;
+  changed   : boolean;
+  frmEnvEdit: TfrmEditEnvironment;
+  iniContent: TStringList;
 begin
-  projContent := TStringList.Create;
+  iniContent := TStringList.Create;
   try
     changed := false;
-    if (FProjectFile <> '') and FileExists(FProjectFile) then
-      projContent.LoadFromFile(FProjectFile);
+    if FileExists(FEngineConfig) then
+      iniContent.LoadFromFile(FEngineConfig);
 
-    frmProjEdit := TfrmEditProject.Create(Self);
+    frmEnvEdit := TfrmEditEnvironment.Create(Self);
     try
-      frmProjEdit.Project := projContent.Text;
-      if frmProjEdit.ShowModal = mrOK then begin
-        projContent.Text := frmProjEdit.Project;
-        changed := true;
+      frmEnvEdit.Environment := iniContent.Text;
+      if frmEnvEdit.ShowModal = mrOK then begin
+        iniContent.Text := frmEnvEdit.Environment;
+         changed := true;
       end;
-    finally FreeAndNil(frmProjEdit); end;
+    finally FreeAndNil(frmEnvEdit); end;
 
     if changed then begin
-      if FProjectFile = '' then begin
-        if not SaveProject.Execute then
-          Exit;
-        FProjectFile := SaveProject.FileName;
-      end;
-      projContent.SaveToFile(FProjectFile);
-      ReloadProject;
+      iniContent.SaveToFile(FEngineConfig);
+      ReloadEngine;
     end;
-  finally FreeAndNil(projContent); end;
+  finally FreeAndNil(iniContent); end;
 end;
 
 procedure TfrmMultiBuilderMain.actEditProjectExecute(Sender: TObject);
