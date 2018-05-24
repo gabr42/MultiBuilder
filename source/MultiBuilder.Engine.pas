@@ -22,21 +22,26 @@ type
   TMultiBuilderEngine = class(TInterfacedObject, IMultiBuilderEngine)
   strict private
   const
-    CGlobalSectionName    = 'Global';  // used always
-    CDefaultSectionName   = 'Default'; // used only if environment-specific section doesn't exist
-    CFiltersSectionName   = 'Filters';
-    CWorkingFolderKeyName = 'WorkingDir';
-    CCommandKeyName       = 'Cmd';
-    CForceDirKeyName      = 'ForceDir';
-    CEnvironmentMacro     = 'EnvironmentName';
+    FS = #28;
+    CGlobalSectionName  = 'Global';  // used always
+    CDefaultSectionName = 'Default'; // used only if environment-specific section doesn't exist
+    CFiltersSectionName = 'Filters';
+    CEnvironmentMacro   = 'EnvironmentName';
+  strict private
   type
     TProjectConfig = record
+    private
+    const
+      CWorkingFolderKeyName = 'WorkingDir';
+      CCommandKeyName       = 'Cmd';
+      CForceDirKeyName      = 'ForceDir';
+      procedure CreateFolders(const folderList: string);
+    public
       Commands: TArray<string>;
       procedure Append(const values: TStringList);
       function Execute_Asy(const environment: string;
-        replaceMacroProc: TFunc<string, string, string>;
-        filterProc: TFunc<string, integer, string, TExecuteResult>;
-        onCommandDoneProc: TProc<string, TExecuteResult>): TExecuteResult;
+        const filterProc: TFunc<string, integer, string, TExecuteResult>;
+        const onCommandDoneProc: TProc<string, TExecuteResult>): TExecuteResult;
     end;
   var
     FCountRunners  : integer;
@@ -49,9 +54,7 @@ type
     FSections      : TStringList;
     FVariables     : IMultiBuilderVariables;
   strict protected
-    procedure CreateFolders(const environment: string);
-    procedure GetFilterNameAndParams(const exeName: string; var name, params:
-      string);
+    procedure GetFilterNameAndParams(const exeName: string; var name, params: string);
     function  GetNumRunningProjects: integer;
     function  GetOnCommandDone: TCommandDoneEvent;
     function  GetOnJobDone: TJobDoneEvent;
@@ -67,8 +70,6 @@ type
     procedure SetOnJobDone(const value: TJobDoneEvent);
     procedure SetOnRunCompleted(const value: TRunCompletedEvent);
     procedure StartRunner(const environment: string; const projectConfig: TProjectConfig);
-  protected
-    class function Split(const kv: string; var key, value: string): boolean;
   public
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
@@ -91,6 +92,23 @@ begin
   Result := TMultiBuilderEngine.Create;
 end;
 
+{ globals }
+
+function Split(const setting: string; delimiter: char; var key, value: string): boolean;
+var
+  p: integer;
+begin
+  p := Pos(delimiter, setting);
+  Result := (p > 0);
+  if Result then begin
+    key := Copy(setting, 1, p-1);
+    value := setting;
+    Delete(value, 1, p);
+  end;
+end;
+
+{ TMultiBuilderEngine }
+
 procedure TMultiBuilderEngine.AfterConstruction;
 begin
   inherited;
@@ -111,16 +129,6 @@ procedure TMultiBuilderEngine.ClearProject;
 begin
   FreeAndNil(FProject);
   FFilterMap.Clear;
-end;
-
-procedure TMultiBuilderEngine.CreateFolders(const environment: string);
-var
-  folder : string;
-  folders: TArray<string>;
-begin
-  folders := FVariables.Evaluate(environment, CForceDirKeyName).Split([';'], '"', '"');
-  for folder in folders do
-    ForceDirectories(ReplaceMacros(environment, folder));
 end;
 
 function TMultiBuilderEngine.Environments: TArray<string>;
@@ -252,7 +260,7 @@ begin
         end;
         memIni.ReadSectionValues(sEnv, values);
         for sNameVar in values do begin
-          if Split(sNameVar, sName, sVar) then
+          if Split(sNameVar, '=', sName, sVar) then
             FVariables.Add(sEnv, sName, sVar);
         end;
       end;
@@ -352,12 +360,11 @@ var
 begin
   PrepareProjectConfig(environment, projConfig);
   try
-    CreateFolders(environment);
     Inc(FCountRunners);
     StartRunner(environment, projConfig);
   except
     on E: Exception do
-      JobDone(environment, TExecuteResult.Create('Internal exception', 255, E.Message));
+      JobDone(environment, TExecuteResult.Create('*** Internal exception', 255, E.Message));
   end;
 end;
 
@@ -376,24 +383,9 @@ begin
   FOnRunCompleted := value;
 end;
 
-class function TMultiBuilderEngine.Split(const kv: string; var key, value: string):
-  boolean;
-var
-  p: integer;
-begin
-  p := Pos('=', kv);
-  Result := (p > 0);
-  if Result then begin
-    key := Copy(kv, 1, p-1);
-    value := kv;
-    Delete(value, 1, p);
-  end;
-end;
-
 procedure TMultiBuilderEngine.StartRunner(const environment: string; const projectConfig: TProjectConfig);
 var
   future      : IFuture<TExecuteResult>;
-  params: string;
   threadConfig: TProjectConfig;
 begin
   threadConfig := projectConfig;
@@ -401,10 +393,6 @@ begin
     function: TExecuteResult
     begin
       Result := threadConfig.Execute_Asy(environment,
-        function (environment, variable: string): string
-        begin
-          Result := ReplaceMacros(environment, variable);
-        end,
         function (command: string; exitCode: integer; output: string): TExecuteResult
         var
           filter: IMultiBuilderFilter;
@@ -450,48 +438,53 @@ var
   value: string;
 begin
   for kv in values do begin
-    if not TMultiBuilderEngine.Split(kv, name, value) then
+    if not Split(kv, '=', name, value) then
       continue; //for
 
-    if SameText(name, CWorkingFolderKeyName) then begin
-      SetLength(Commands, Length(Commands) + 1);
-      Commands[High(Commands)] := '@' + value;
-    end
-    else if SameText(name, CCommandKeyName) then begin
-      SetLength(Commands, Length(Commands) + 1);
-      Commands[High(Commands)] := value;
-    end;
+    SetLength(Commands, Length(Commands) + 1);
+    Commands[High(Commands)] := name + FS + value;
   end;
 end;
 
+procedure TMultiBuilderEngine.TProjectConfig.CreateFolders(const folderList: string);
+var
+  folder: string;
+begin
+  for folder in folderList.Split([';'], '"', '"') do
+    ForceDirectories(folder);
+end;
+
 function TMultiBuilderEngine.TProjectConfig.Execute_Asy(const environment: string;
-  replaceMacroProc: TFunc<string, string, string>;
-  filterProc: TFunc<string, integer, string, TExecuteResult>;
-  onCommandDoneProc: TProc<string, TExecuteResult>): TExecuteResult;
+  const filterProc: TFunc<string, integer, string, TExecuteResult>;
+  const onCommandDoneProc: TProc<string, TExecuteResult>): TExecuteResult;
 var
   cmd     : string;
   cmdRes  : TExecuteResult;
   exitCode: integer;
+  name    : string;
   output  : string;
+  value   : string;
   workDir : string;
 begin
   workDir := '';
   for cmd in Commands do begin
-    if cmd.StartsWith('@') then begin
-      workDir := cmd;
-      Delete(workDir, 1, 1);
-      workDir := replaceMacroProc(environment, workDir);
-    end
+    if not Split(cmd, FS, name, value) then
+      continue; //for cmd
+
+    if SameText(name, CWorkingFolderKeyName) then
+      workDir := value
+    else if SameText(name, CForceDirKeyName) then
+      CreateFolders(value)
     else begin
       if workDir = '' then
         cmdRes := TExecuteResult.Create(cmd, 255, 'Working directory is not set (missing WorkingDir directive)')
       else begin
-        MBPlatform.Execute(WorkDir, cmd, exitCode, output);
-        cmdRes := filterProc(cmd, exitCode, output)
+        MBPlatform.Execute(WorkDir, value, exitCode, output);
+        cmdRes := filterProc(value, exitCode, output)
       end;
       onCommandDoneProc(environment, cmdRes);
-      if exitCode <> 0 then
-        Exit(TExecuteResult.Create(cmd, exitCode, output));
+      if cmdRes.exitCode <> 0 then
+        Exit(cmdRes);
     end;
   end;
   Result := TExecuteResult.Create('', 0, '');
