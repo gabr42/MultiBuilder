@@ -8,7 +8,7 @@ If you are in a hurry and just need compiled binary, you can grab it [here](http
 
 # Configuration
 
-Execution environment consists of two parts - a configuration file defining all execution *environments* (consisting mostly of *variable definitions*) and a configuration file defining the *project* (mostly describing programs that should be executed). It is possible to use one generic environment configuration with different project configurations.
+Execution environment consists of two parts - a configuration file defining all execution *environments*  and a configuration file defining the *project*. The former containts only *variables* while the latter contains only *commands*. It is possible to use one generic environment configuration with different project configurations.
 
 ## Environment
 
@@ -19,7 +19,6 @@ Environment configuration file is split into *sections*. Besides the special sec
 ```
 [Global] 
 Scratch=c:\0\MultiBuilder\$(EnvironmentName)
-ForceDir=$(Scratch)\exe;$(Scratch)\dcu;$(Scratch)\dcu\win32;$(Scratch)\dcu\win64
  
 [Delphi 2007]
 Path=d:\Delphi\5.0\bin
@@ -66,7 +65,7 @@ Path=d:\Delphi\19.0\bin
 
 OmniThreadLibrary supports Delphi compilers from version *2007* to *10.2 Tokyo* and this configuration file reflects that. Each environment section defines *variable* `Path`. We'll see in the section *Project* below how this variable is used in practice. 
 
-Special section *Global* defines variables that are defined for all environments. In this example it defines variable *Scratch* that is used in the project file and special *directive* *ForceDir* specifying folders that *MultiBuilder* should create before the project is executed. (For more information see [Running projects](#running-projects) below.) 
+Special section *Global* defines variables that are defined for all environments. In this example it defines variable *Scratch* that is used in the project file. (For more information see [Running projects](#running-projects) below.) 
 
 Special macro *$(EnvironmentName)* always expands to the name of *environment* used to run the project. In the example above, this macro could expand to *Delphi 2007*, *Delphi XE5*, *Delphi 10.1 Berlin*, and so on.
 
@@ -80,7 +79,8 @@ The following example shows project file used for unit-testing [OmniThreadLibrar
 
 ```
 [Global] 
-Folder=h:\razvoj\omnithreadlibrary\unittests
+ForceDir=$(Scratch)\exe;$(Scratch)\dcu;$(Scratch)\dcu\win32;$(Scratch)\dcu\win64
+WorkingDir=h:\razvoj\omnithreadlibrary\unittests
 Cmd=$(Path)\dcc32.exe CompileAllUnits -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e"$(Scratch)\exe" -n0"$(Scratch)\dcu\win32" -dCONSOLE_TESTRUNNER
 Cmd=$(Path)\dcc32.exe TestRunner -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e"$(Scratch)\exe" -n0"$(Scratch)\dcu\win32" -dCONSOLE_TESTRUNNER
 Cmd="$(Scratch)\exe\TestRunner.exe"
@@ -103,7 +103,15 @@ Null=
 Null=
 ```
 
-Section *Global* specifies a *folder* which is used as a *working directory* for each command. Commands are all introduced with key *Cmd*. All other keys are ignored.
+Following commands are supported. (For more details see [Running projects](#running-projects) below.)
+
+*ForceDir* creates folders. Folders are represented by a semicolon-delimited list. Errors during folder creation are silently ignores.
+
+*WorkingDir* sets base folder in which the following commands (*Cmd*) are executed. *WorkingDir* must be set before the first *Cmd* command. Failure to do so will result in an error.
+
+*Cmd* introduces a command that will be executed.
+
+All other commands are ignored.
 
 # Running projects
 
@@ -115,18 +123,16 @@ Each environment executes the project in its own thread. You can therefore selec
 
 In each environment the project is executed by following these steps:
 
-- Environment-specific section is located in the *project* configuration file. If it is not found, the special section *Default* is used instead. (See example below.)
-- *ForceDir* setting is read from the environment section of the *environment* configuration file. If it is not found there, it is read from the *Global* section of the same file.
-- Macros in the *ForceDir* settings are expanded. (See [Macro expansion](#macro-expansion) below.)
-- All folders in the *ForceDir* list (semicolon-delimited) are created.
-- *Folder* setting is read from the environment-specific section of the *project* configuration file. If it is not found there, it is read from the *Global* section. 
-- Macros in the *Folder* setting are expanded. (See [Macro expansion](#macro-expansion) below.)
-- For each *Cmd* setting in the *Global* section the following steps are executed:
-    - Macros in the setting are expanded. Be careful to use double-quotes at appropriate places if a macro expansion can contain a space character. (See [Macro expansion](#macro-expansion) below.)  
-    - Program is executed in the *Folder* directory.
+- Commands from the *Global* section are executed first.
+- Command from the environment-specific section are executed next. If this section is not found, the special section *Default* is used instead. (See example below.)
+- Commands are executed in order.
+- When *ForceDir* is encountered, folders are created. Errors are ignored. Command value can contain [macros](#macro-expansion).
+- When *WorkDir* is encountered, internal variable is set to the command value. Command value can contain [macros](#macro-expansion).
+- When *Cmd* is encountered, the following steps are executed:
+    - Macros in the setting are [expanded](#macro-expansion). Be careful to use double-quotes at appropriate places if a macro expansion can contain a space character.
+    - Program is executed in the current *WorkDir* directory.
     - If program cannot be started or if it exits with a non-zero *exit code*, execution stops immediately.
-    - Otherwise the execution continues with the next *Cmd* setting.
-- For each *Cmd setting in the environment-specific section the same steps are executed.
+    - Otherwise the execution continues.
 
 For example, if we use the [OmniThreadLibrary](http://www.omnithreadlibrary.com) configurations mentioned above, environment *Delphi 2007* would execute all commands from the *Global* section. As there exists a *Delphi 2007* section, commands from the *Default* section are ignored. *Delphi 2007* section contains just one setting with key *Null*, which is ignores. (At least one setting must be stored in a section, otherwise the information about that section is lost when configuration file is loaded.)  
 
