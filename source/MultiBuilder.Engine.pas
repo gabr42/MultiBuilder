@@ -29,6 +29,7 @@ type
     CEnvironmentMacro   = 'EnvironmentName';
   strict private
   type
+    TFilterMap = TDictionary<string, string>;
     TProjectConfig = record
     private
     const
@@ -36,17 +37,20 @@ type
       CCommandKeyName       = 'Cmd';
       CForceDirKeyName      = 'ForceDir';
       procedure CreateFolders(const folderList: string);
+      function Filter(const filterMap: TFilterMap; const cmdRes: TExecuteResult):
+        TExecuteResult;
+      procedure GetFilterNameAndParams(filterMap: TFilterMap; const exeName: string;
+        var name, params: string);
     public
       Commands: TArray<string>;
       procedure Append(const values: TStringList);
-      function Execute_Asy(const environment: string;
-        const filterProc: TFunc<string, integer, string, TExecuteResult>;
+      function  Execute_Asy(const environment: string; filterMap: TFilterMap;
         const onCommandDoneProc: TProc<string, TExecuteResult>): TExecuteResult;
     end;
   var
     FCountRunners  : integer;
     FEnvironments  : TArray<string>;
-    FFilterMap     : TDictionary<string,string>;
+    FFilterMap     : TStringList;
     FOnCommandDone : TCommandDoneEvent;
     FOnJobDone     : TJobDoneEvent;
     FOnRunCompleted: TRunCompletedEvent;
@@ -54,7 +58,9 @@ type
     FSections      : TStringList;
     FVariables     : IMultiBuilderVariables;
   strict protected
-    procedure GetFilterNameAndParams(const exeName: string; var name, params: string);
+    procedure Asy_OnCommandDone(environment: string; result: TExecuteResult);
+    procedure Asy_SignalJobDone(const environment: string; const future: IFuture<TExecuteResult>);
+    function  CreateFilterMap(const environment: string): TFilterMap;
     function  GetNumRunningProjects: integer;
     function  GetOnCommandDone: TCommandDoneEvent;
     function  GetOnJobDone: TJobDoneEvent;
@@ -65,7 +71,6 @@ type
     procedure ReplaceMacros(const environment: string; values: TStringList); overload;
     function  ReplaceMacros(const environment, value: string): string; overload;
     procedure JobDone(const environment: string; const result: TExecuteResult);
-    procedure LoadFilterMap;
     procedure SetOnCommandDone(const value: TCommandDoneEvent);
     procedure SetOnJobDone(const value: TJobDoneEvent);
     procedure SetOnRunCompleted(const value: TRunCompletedEvent);
@@ -114,7 +119,31 @@ begin
   inherited;
   FSections := TStringList.Create;
   FVariables := CreateMBVariables(CGlobalSectionName, CDefaultSectionName, CEnvironmentMacro);
-  FFilterMap := TDictionary<string, string>.Create(TIStringComparer.Ordinal);
+  FFilterMap := TStringList.Create;
+end;
+
+procedure TMultiBuilderEngine.Asy_OnCommandDone(environment: string; result:
+  TExecuteResult);
+var
+  cmdResult: TExecuteResult;
+begin
+  cmdResult := result;
+  TThread.Queue(nil,
+    procedure
+    begin
+      if assigned(OnCommandDone) then
+        OnCommandDone(environment, cmdResult);
+    end);
+end;
+
+procedure TMultiBuilderEngine.Asy_SignalJobDone(const environment: string; const future:
+  IFuture<TExecuteResult>);
+begin
+  TThread.Queue(nil,
+    procedure
+    begin
+      JobDone(environment, future.Value);
+    end);
 end;
 
 procedure TMultiBuilderEngine.BeforeDestruction;
@@ -131,29 +160,22 @@ begin
   FFilterMap.Clear;
 end;
 
+function TMultiBuilderEngine.CreateFilterMap(const environment: string): TFilterMap;
+var
+  key  : string;
+  kv   : string;
+  value: string;
+begin
+  Result := TFilterMap.Create(TIStringComparer.Ordinal);
+  for kv in FFilterMap do begin
+    if Split(ReplaceMacros(environment, kv), '=', key, value) then
+      Result.AddOrSetValue(key, value);
+  end;
+end;
+
 function TMultiBuilderEngine.Environments: TArray<string>;
 begin
   Result := FEnvironments;
-end;
-
-procedure TMultiBuilderEngine.GetFilterNameAndParams(const exeName: string;
-  var name, params: string);
-var
-  parts: TArray<string>;
-begin
-  MonitorEnter(FFilterMap);
-  try
-    if (not FFilterMap.TryGetValue(exeName, name)) or (Trim(name) = '') then begin
-      name := '';
-      params := '';
-    end
-    else begin
-      parts := name.Split([' '], '"', '"');
-      name := parts[0];
-      Delete(parts, 0, 1);
-      params := string.Join(' ', parts);
-    end;
-  finally MonitorExit(FFilterMap); end;
 end;
 
 function TMultiBuilderEngine.GetNumRunningProjects: integer;
@@ -192,26 +214,6 @@ begin
       if (FCountRunners = 0) and assigned(OnRunCompleted) then
         OnRunCompleted();
     end);
-end;
-
-procedure TMultiBuilderEngine.LoadFilterMap;
-var
-  kv    : TArray<string>;
-  s     : string;
-  values: TStringList;
-begin
-  MonitorEnter(FFilterMap);
-  try
-    values := TStringList.Create;
-    try
-      FProject.ReadSectionValues(CFiltersSectionName, values);
-      for s in values do begin
-        kv := s.Split(['=']);
-        if Length(kv) = 2 then
-          FFilterMap.Add(kv[0], kv[1]);
-      end;
-    finally FreeAndNil(values); end;
-  finally MonitorExit(FFilterMap); end;
 end;
 
 function TMultiBuilderEngine.LoadFrom(const iniFile: string): boolean;
@@ -279,7 +281,7 @@ begin
 
   try
     FProject := TMemIniFile.Create(projFile);
-    LoadFilterMap;
+    FProject.ReadSectionValues(CFiltersSectionName, FFilterMap);
   except
     ClearProject;
     Result := false;
@@ -392,44 +394,14 @@ begin
   future := TFuture<TExecuteResult>.Create(TObject(nil), TFunctionEvent<TExecuteResult>(nil),
     function: TExecuteResult
     begin
-      Result := threadConfig.Execute_Asy(environment,
-        function (command: string; exitCode: integer; output: string): TExecuteResult
-        var
-          filter: IMultiBuilderFilter;
-          name  : string;
-          params: string;
-        begin
-          Result := TExecuteResult.Create(command, exitCode, output);
-          GetFilterNameAndParams(
-            ExtractFileName((command + ' !').Split([' '], '"', '"')[0]),
-            name, params);
-          filter := FilterManager.CreateNewInstance(name, params);
-          if assigned(filter) then
-            Result := filter.Process(Result);
-        end,
-        procedure (environment: string; result: TExecuteResult)
-        var
-          cmdResult: TExecuteResult;
-        begin
-          cmdResult := result;
-          TThread.Queue(nil,
-            procedure
-            begin
-              if assigned(OnCommandDone) then
-                OnCommandDone(environment, cmdResult);
-            end);
-        end);
-
-      TThread.Queue(nil,
-        procedure
-        begin
-          JobDone(environment, future.Value);
-          future := nil;
-        end);
+      Result := threadConfig.Execute_Asy(environment, CreateFilterMap(environment), Asy_OnCommandDone);
+      Asy_SignalJobDone(environment, future);
     end,
     TThreadPool.Default);
   future.Start;
 end;
+
+{ TMultiBuilderEngine.TProject }
 
 procedure TMultiBuilderEngine.TProjectConfig.Append(const values: TStringList);
 var
@@ -455,8 +427,7 @@ begin
 end;
 
 function TMultiBuilderEngine.TProjectConfig.Execute_Asy(const environment: string;
-  const filterProc: TFunc<string, integer, string, TExecuteResult>;
-  const onCommandDoneProc: TProc<string, TExecuteResult>): TExecuteResult;
+  filterMap: TFilterMap; const onCommandDoneProc: TProc<string, TExecuteResult>): TExecuteResult;
 var
   cmd     : string;
   cmdRes  : TExecuteResult;
@@ -466,28 +437,63 @@ var
   value   : string;
   workDir : string;
 begin
-  workDir := '';
-  for cmd in Commands do begin
-    if not Split(cmd, FS, name, value) then
-      continue; //for cmd
+  try
+    workDir := '';
+    for cmd in Commands do begin
+      if not Split(cmd, FS, name, value) then
+        continue; //for cmd
 
-    if SameText(name, CWorkingFolderKeyName) then
-      workDir := value
-    else if SameText(name, CForceDirKeyName) then
-      CreateFolders(value)
-    else begin
-      if workDir = '' then
-        cmdRes := TExecuteResult.Create(cmd, 255, 'Working directory is not set (missing WorkingDir directive)')
+      if SameText(name, CWorkingFolderKeyName) then
+        workDir := value
+      else if SameText(name, CForceDirKeyName) then
+        CreateFolders(value)
       else begin
-        MBPlatform.Execute(WorkDir, value, exitCode, output);
-        cmdRes := filterProc(value, exitCode, output)
+        if workDir = '' then
+          cmdRes := TExecuteResult.Create(cmd, 255, 'Working directory is not set (missing WorkingDir directive)')
+        else begin
+          MBPlatform.Execute(WorkDir, value, exitCode, output);
+          cmdRes := Filter(filterMap, TExecuteResult.Create(value, exitCode, output));
+        end;
+        onCommandDoneProc(environment, cmdRes);
+        if cmdRes.exitCode <> 0 then
+          Exit(cmdRes);
       end;
-      onCommandDoneProc(environment, cmdRes);
-      if cmdRes.exitCode <> 0 then
-        Exit(cmdRes);
     end;
+    Result := TExecuteResult.Create('', 0, '');
+  finally FreeAndNil(filterMap); end;
+end;
+
+function TMultiBuilderEngine.TProjectConfig.Filter(const filterMap: TFilterMap;
+  const cmdRes: TExecuteResult): TExecuteResult;
+var
+  filter: IMultiBuilderFilter;
+  name  : string;
+  params: string;
+begin
+  Result := cmdRes;
+  GetFilterNameAndParams(filterMap,
+    ExtractFileName((cmdRes.Command + ' !').Split([' '], '"', '"')[0]),
+    name, params);
+  filter := FilterManager.CreateNewInstance(name, params);
+  if assigned(filter) then
+    Result := filter.Process(Result);
+end;
+
+procedure TMultiBuilderEngine.TProjectConfig.GetFilterNameAndParams(filterMap: TFilterMap;
+  const exeName: string; var name, params: string);
+var
+  parts: TArray<string>;
+begin
+  if (not filterMap.TryGetValue(exeName, name)) or (Trim(name) = '') then begin
+    name := '';
+    params := '';
+  end
+  else begin
+    parts := name.Split([' '], '"', '"');
+    name := parts[0];
+    Delete(parts, 0, 1);
+    params := string.Join(' ', parts);
   end;
-  Result := TExecuteResult.Create('', 0, '');
 end;
 
 end.
