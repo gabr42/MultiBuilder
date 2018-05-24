@@ -34,7 +34,7 @@ type
     private
     const
       CWorkingFolderKeyName = 'WorkingDir';
-      CCommandKeyName       = 'Cmd';
+      CCommandKeyName       = 'Execute';
       CForceDirKeyName      = 'ForceDir';
       procedure CreateFolders(const folderList: string);
       function Filter(const filterMap: TFilterMap; const cmdRes: TExecuteResult):

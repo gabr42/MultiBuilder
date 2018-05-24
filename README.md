@@ -1,4 +1,4 @@
-# MultiBuilder
+﻿# MultiBuilder
 
 *MultiBuilder* is a simple tool that allows you to run a set of programs on multiple configurations (called *environments* in the program) at the same time. Results from programs that fail execution are presented for inspection.
 
@@ -88,14 +88,14 @@ dcc64.exe=DccCleanup $(DccFilterSwitch)
 [Global]
 ForceDir=$(Scratch)\exe;$(Scratch)\dcu;$(Scratch)\dcu\win32;$(Scratch)\dcu\win64
 WorkingDir=h:\razvoj\omnithreadlibrary\unittests
-Cmd=$(Path)\dcc32.exe CompileAllUnits -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e"$(Scratch)\exe" -n0"$(Scratch)\dcu\win32" -dCONSOLE_TESTRUNNER
-Cmd=$(Path)\dcc32.exe TestRunner -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e"$(Scratch)\exe" -n0"$(Scratch)\dcu\win32" -dCONSOLE_TESTRUNNER
-Cmd="$(Scratch)\exe\TestRunner.exe"
+Execute=$(Path)\dcc32.exe CompileAllUnits -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e"$(Scratch)\exe" -n0"$(Scratch)\dcu\win32" -dCONSOLE_TESTRUNNER
+Execute=$(Path)\dcc32.exe TestRunner -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e"$(Scratch)\exe" -n0"$(Scratch)\dcu\win32" -dCONSOLE_TESTRUNNER
+Execute="$(Scratch)\exe\TestRunner.exe"
 
 [Default]
-Cmd=$(Path)\dcc64.exe CompileAllUnits -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e"$(Scratch)\exe" -n0"$(Scratch)\dcu\win64" -dCONSOLE_TESTRUNNER
-Cmd=$(Path)\dcc64.exe TestRunner -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e"$(Scratch)\exe" -n0"$(Scratch)\dcu\win64" -dCONSOLE_TESTRUNNER
-Cmd="$(Scratch)\exe\TestRunner.exe"
+Execute=$(Path)\dcc64.exe CompileAllUnits -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e"$(Scratch)\exe" -n0"$(Scratch)\dcu\win64" -dCONSOLE_TESTRUNNER
+Execute=$(Path)\dcc64.exe TestRunner -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e"$(Scratch)\exe" -n0"$(Scratch)\dcu\win64" -dCONSOLE_TESTRUNNER
+Execute="$(Scratch)\exe\TestRunner.exe"
 
 [Delphi 2007]
 Null=
@@ -114,9 +114,9 @@ Following commands are supported. (For more details see [Running projects](#runn
 
 *ForceDir* creates folders. Folders are represented by a semicolon-delimited list. Errors during folder creation are silently ignores.
 
-*WorkingDir* sets base folder in which the following commands (*Cmd*) are executed. *WorkingDir* must be set before the first *Cmd* command. Failure to do so will result in an error.
+*WorkingDir* sets base folder in which the following commands (*Execute*) are executed. *WorkingDir* must be set before the first *Execute* command. Failure to do so will result in an error.
 
-*Cmd* introduces a command that will be executed.
+*Execute* introduces a command that will be executed.
 
 All other commands are ignored.
 
@@ -135,7 +135,7 @@ In each environment the project is executed by following these steps:
 - Commands are executed in order.
 - When *ForceDir* is encountered, folders are created. Errors are ignored. Command value can contain [macros](#macro-expansion).
 - When *WorkDir* is encountered, internal variable is set to the command value. Command value can contain [macros](#macro-expansion).
-- When *Cmd* is encountered, the following steps are executed:
+- When *Execute* is encountered, the following steps are executed:
     - Macros in the setting are [expanded](#macro-expansion). Be careful to use double-quotes at appropriate places if a macro expansion can contain a space character.
     - Program is executed in the current *WorkDir* directory.
     - Program output is run through a [filter](#filtering).
@@ -154,7 +154,7 @@ Multibuilder.exe SmokeTest.mbenv SmokeTest.mbproj
 
 # Filtering
 
-After a command (introduced with a *Cmd* key) is executed, its output is run through a filter. MultiBuilder determines the filter to be used by using the command name (*excluding* a path but *including* the extension) as a lookup key into the *Filters* section of the [project](#project) configuration. If an appropriate setting is found, macros in the right-hand side are [expanded](#macro-expansion).
+After a command (introduced with a *Execute* key) is executed, its output is run through a filter. MultiBuilder determines the filter to be used by using the command name (*excluding* a path but *including* the extension) as a lookup key into the *Filters* section of the [project](#project) configuration. If an appropriate setting is found, macros in the right-hand side are [expanded](#macro-expansion).
 
 First part of the right-hand side (with blank space being a delimiter) determines the filter to be executed. Currently, only built-in filters are supported. The rest of the right-hand side represents filter parameters which are filter-specific.
 

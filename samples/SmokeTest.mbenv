@@ -2,6 +2,18 @@
 Scratch=c:\0\MultiBuilder\$(EnvironmentName)
 DccFilterSwitch=/FailOnWarning
 
+[Delphi 2007]
+Path=d:\Delphi\5.0\bin
+
+[Delphi 2009]
+Path=d:\Delphi\6.0\bin
+
+[Delphi 2010]
+Path=d:\Delphi\7.0\bin
+
+[Delphi XE]
+Path=d:\Delphi\8.0\bin
+
 [Delphi XE2]
 Path=d:\Delphi\9.0\bin
 
