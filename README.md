@@ -17,16 +17,17 @@ Environment definitions are stored in an INI-style configuration file with exten
 Environment configuration file is split into *sections*. Besides the special section named *Global* you can define any number of sections, each describing its own environment. The following example shows environment file used for testing [OmniThreadLibrary](http://www.omnithreadlibrary.com).
 
 ```
-[Global] 
+[Global]
 Scratch=c:\0\MultiBuilder\$(EnvironmentName)
- 
+DccFilterSwitch=/FailOnWarning
+
 [Delphi 2007]
 Path=d:\Delphi\5.0\bin
 
 [Delphi 2009]
 Path=d:\Delphi\6.0\bin
 
-[Delphi 2010]                     *
+[Delphi 2010]
 Path=d:\Delphi\7.0\bin
 
 [Delphi XE]
@@ -65,7 +66,7 @@ Path=d:\Delphi\19.0\bin
 
 OmniThreadLibrary supports Delphi compilers from version *2007* to *10.2 Tokyo* and this configuration file reflects that. Each environment section defines *variable* `Path`. We'll see in the section *Project* below how this variable is used in practice. 
 
-Special section *Global* defines variables that are defined for all environments. In this example it defines variable *Scratch* that is used in the project file. (For more information see [Running projects](#running-projects) below.) 
+Special section *Global* defines variables that are defined for all environments. In this example it defines variables *Scratch* and *DccFilterSwitch* which are used in the project file. (For more information see [Running projects](#running-projects) below.) 
 
 Special macro *$(EnvironmentName)* always expands to the name of *environment* used to run the project. In the example above, this macro could expand to *Delphi 2007*, *Delphi XE5*, *Delphi 10.1 Berlin*, and so on.
 
@@ -74,26 +75,32 @@ Special macro *$(EnvironmentName)* always expands to the name of *environment* u
 Project definition is stored in an INI-style configuration file with extension `.mbproj`. There is no default project configuration file. You can provide it via the command-line parameter or by clicking the *Load Project* button. *Edit Project* button opens up a simple text editor where you can modify the project file.
 
 Project configuration file is split into *sections*. Special section *Global* defines commands that are always executed. Sections with names corresponding to *environment* names contain commands that are only executed in that environment. If a section for specific environment doesn't exist in the project file, commands from the special *Default* section will be used. (For more information see [Running projects](#running-projects) below.)  
+
+Special section *Filters* contains [filter definitions](#filtering). Each filter definition is in form *executable=filter parameters*.
  
 The following example shows project file used for unit-testing [OmniThreadLibrary](http://www.omnithreadlibrary.com).
 
 ```
-[Global] 
+[Filters]
+dcc32.exe=DccCleanup $(DccFilterSwitch)
+dcc64.exe=DccCleanup $(DccFilterSwitch)
+
+[Global]
 ForceDir=$(Scratch)\exe;$(Scratch)\dcu;$(Scratch)\dcu\win32;$(Scratch)\dcu\win64
 WorkingDir=h:\razvoj\omnithreadlibrary\unittests
 Cmd=$(Path)\dcc32.exe CompileAllUnits -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e"$(Scratch)\exe" -n0"$(Scratch)\dcu\win32" -dCONSOLE_TESTRUNNER
 Cmd=$(Path)\dcc32.exe TestRunner -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e"$(Scratch)\exe" -n0"$(Scratch)\dcu\win32" -dCONSOLE_TESTRUNNER
 Cmd="$(Scratch)\exe\TestRunner.exe"
 
-[Default] 
+[Default]
 Cmd=$(Path)\dcc64.exe CompileAllUnits -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e"$(Scratch)\exe" -n0"$(Scratch)\dcu\win64" -dCONSOLE_TESTRUNNER
 Cmd=$(Path)\dcc64.exe TestRunner -b -u..;..\src;..\..\fastmm -i.. -nsSystem;System.Win;Winapi;Vcl;Vcl.Imaging;Vcl.Samples;Data;Xml -e"$(Scratch)\exe" -n0"$(Scratch)\dcu\win64" -dCONSOLE_TESTRUNNER
 Cmd="$(Scratch)\exe\TestRunner.exe"
 
-[Delphi 2007] 
+[Delphi 2007]
 Null=
 
-[Delphi 2009] 
+[Delphi 2009]
 Null=
 
 [Delphi 2010]
@@ -131,6 +138,7 @@ In each environment the project is executed by following these steps:
 - When *Cmd* is encountered, the following steps are executed:
     - Macros in the setting are [expanded](#macro-expansion). Be careful to use double-quotes at appropriate places if a macro expansion can contain a space character.
     - Program is executed in the current *WorkDir* directory.
+    - Program output is run through a [filter](#filtering).
     - If program cannot be started or if it exits with a non-zero *exit code*, execution stops immediately.
     - Otherwise the execution continues.
 
@@ -143,6 +151,28 @@ Following command can be used to start *MultiBuilder* and load appropriate *envi
 ```
 Multibuilder.exe SmokeTest.mbenv SmokeTest.mbproj 
 ```
+
+# Filtering
+
+After a command (introduced with a *Cmd* key) is executed, its output is run through a filter. MultiBuilder determines the filter to be used by using the command name (*excluding* a path but *including* the extension) as a lookup key into the *Filters* section of the [project](#project) configuration. If an appropriate setting is found, macros in the right-hand side are [expanded](#macro-expansion).
+
+First part of the right-hand side (with blank space being a delimiter) determines the filter to be executed. Currently, only built-in filters are supported. The rest of the right-hand side represents filter parameters which are filter-specific.
+
+Following built-in filters are implemented at the moment.
+
+## DccCleanup
+
+This filter removes most of the crud produced by dcc* Embarcadero compilers and leaves only lines that are interesting to the programmer.
+
+Following parameters are supported.
+
+### FailOnHint
+
+This parameter (introduced with `-FailOnHint` or `/FailOnHint`) causes execution to fail if dcc compiler reported a hint. 
+
+### FailOnWarning
+
+This parameter (introduced with `-FailOnWarning` or `/FailOnWarning`) causes execution to fail if dcc compiler reported a warning. An example can be seen in [OmniThreadLibrary](http://www.omnithreadlibrary.com) configuration files, above.
 
 # Macro expansion
 
@@ -182,7 +212,7 @@ The list on the left contains all environments. An icon left to the environment 
 
 ⏵ Indicates that the project is still executing.
 
-The editor on the right shows problems in the selected environment (*Delphi XE2*). First line contains exit code `[1]` and program line `d:\Delphi\9.0\bin\dcc32.exe CompileAllUnits ...`. It is followed by one empty line and the output of the program.
+The editor on the right shows problems in the selected environment (*Delphi 2007*). Combo box at the top contains exit code `[255]` and program line `d:\Delphi\5.0\bin\dcc32.exe CompileAllUnits ...`. The output of the program is shown below. Although the *dcc32* compiled the program without an error, the output was passed through the [DccCleanup](#dcccleanup) filter with the [FailOnWarning](#failonwarning) parameter which stopped the further execution because *dcc32* reported one warning.
 
 # Contributions
 
