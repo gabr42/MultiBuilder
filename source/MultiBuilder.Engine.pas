@@ -490,8 +490,8 @@ begin
         cmdRes := filterProc(cmd, exitCode, output)
       end;
       onCommandDoneProc(environment, cmdRes);
-      if exitCode <> 0 then
-        Exit(TExecuteResult.Create(cmd, exitCode, output));
+      if cmdRes.exitCode <> 0 then
+        Exit(cmdRes);
     end;
   end;
   Result := TExecuteResult.Create('', 0, '');

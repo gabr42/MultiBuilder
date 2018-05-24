@@ -12,13 +12,13 @@ type
   TMBCleanupFilter = class(TInterfacedObject, IMultiBuilderFilter)
   strict private
   const
-    COptErrorOnHint    = 'ErrorOnHint';
-    COptErrorOnWarning = 'ErrorOnWarning';
+    COptFailOnHint    = 'FailOnHint';
+    COptFailOnWarning = 'FailOnWarning';
   type
-    TOption = (optErrorOnHint, optErrorOnWarning);
+    TOption = (optFailOnHint, optFailOnWarning);
     TOptions = set of TOption;
   var
-    FForceError: boolean;
+    FForceFail: boolean;
     FOptions   : TOptions;
   strict protected
     function  IsMeaninglessCompilerLine(const line: string): boolean;
@@ -58,10 +58,10 @@ begin
     Result := false
   else if Length(parts) > 2 then begin
     part1 := Trim(parts[2]).Split([' '])[0];
-    if (optErrorOnHint in FOptions) and SameText(part1, 'Hint:') then
-      FForceError := true
-    else if (optErrorOnWarning in FOptions) and SameText(part1, 'Warning:') then
-      FForceError := true;
+    if (optFailOnHint in FOptions) and SameText(part1, 'Hint:') then
+      FForceFail := true
+    else if (optFailOnWarning in FOptions) and SameText(part1, 'Warning:') then
+      FForceFail := true;
     Result := false
   end
   else
@@ -70,19 +70,23 @@ end;
 
 function TMBCleanupFilter.Process(const origResult: TExecuteResult): TExecuteResult;
 var
-  i : integer;
-  sl: TStringList;
+  exitCode: integer;
+  i       : integer;
+  sl      : TStringList;
 begin
-  FForceError := false;
+  FForceFail := false;
   sl := TStringList.Create;
   try
     sl.Text := origResult.Output;
     for i := sl.Count - 1 downto 0 do
       if IsMeaninglessCompilerLine(sl[i]) then
         sl.Delete(i);
-    Result := TExecuteResult.Create(origResult.Command,
-                IfThen((origResult.ExitCode <> 0) or (not FForceError), origResult.ExitCode, 255),
-                sl.Text);
+    exitCode := origResult.ExitCode;
+    if (exitCode = 0) and FForceFail then begin
+      sl.Add('*** DccCleanup filter prevented further execution');
+      exitCode := 255;
+    end;
+    Result := TExecuteResult.Create(origResult.Command, exitCode, sl.Text);
   finally FreeAndNil(sl); end;
 end;
 
@@ -92,10 +96,10 @@ var
 begin
   FOptions := [];
   for par in params do
-    if SameText(par, '-'+COptErrorOnHint) or SameText(par, '/'+COptErrorOnHint) then
-      Include(FOptions, optErrorOnHint)
-    else if SameText(par, '-'+COptErrorOnWarning) or SameText(par, '/'+COptErrorOnWarning) then
-      Include(FOptions, optErrorOnWarning);
+    if SameText(par, '-'+COptFailOnHint) or SameText(par, '/'+COptFailOnHint) then
+      Include(FOptions, optFailOnHint)
+    else if SameText(par, '-'+COptFailOnWarning) or SameText(par, '/'+COptFailOnWarning) then
+      Include(FOptions, optFailOnWarning);
 end;
 
 initialization
