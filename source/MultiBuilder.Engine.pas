@@ -447,7 +447,7 @@ begin
         workDir := value
       else if SameText(name, CForceDirKeyName) then
         CreateFolders(value)
-      else begin
+      else if SameText(name, CCommandKeyName) then begin
         if workDir = '' then
           cmdRes := TExecuteResult.Create(cmd, 255, 'Working directory is not set (missing WorkingDir directive)')
         else begin
