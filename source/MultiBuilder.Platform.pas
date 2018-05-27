@@ -56,7 +56,7 @@ begin
     swInfo.cb := SizeOf(swInfo);
     swInfo.dwFlags := STARTF_USESHOWWINDOW;
     swInfo.wShowWindow := SW_HIDE;
-    if not CreateProcess(PChar('c:\windows\system32\cmd.exe'), PChar('/C ' + command + ' >' + tempName),
+    if not CreateProcess(PChar('c:\windows\system32\cmd.exe'), PChar('/C "' + command + ' >' + tempName+'"'),
              nil, nil, false, CREATE_NEW_CONSOLE OR NORMAL_PRIORITY_CLASS, nil,
              PChar(workDir), swInfo, procInfo)
     then begin
