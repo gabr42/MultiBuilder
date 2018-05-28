@@ -10,13 +10,14 @@ type
     class function EnvConfigName: string;
     class procedure Execute(const workDir: string; const command: string;
       var exitCode: integer; var output: string);
+    class procedure OpenURL(const url: string);
   end;
 
 implementation
 
 uses
   {$IFDEF MSWINDOWS}
-  Winapi.Windows,
+  Winapi.Windows, Winapi.ShellAPI,
   {$ENDIF}
   System.SysUtils, System.IOUtils, System.Classes;
 
@@ -76,6 +77,16 @@ begin
     output := 'MultiBuilder: Not implemented on this platform';
     {$ENDIF}
   finally DeleteFile(tempName); end;
+end;
+
+class procedure MBPlatform.OpenURL(const url: string);
+begin
+  {$IFDEF MSWINDOWS}
+    ShellExecute(0, 'OPEN', PChar(url), '', '', SW_SHOWNORMAL);
+  {$ENDIF MSWINDOWS}
+  {$IFDEF POSIX}
+    _system(PAnsiChar('open ' + AnsiString(url)));
+  {$ENDIF POSIX}
 end;
 
 end.

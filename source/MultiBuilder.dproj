@@ -105,7 +105,7 @@
         <DCC_RemoteDebug>false</DCC_RemoteDebug>
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
         <AppEnableHighDPI>true</AppEnableHighDPI>
-        <Debugger_RunParams>..\samples\SmokeTest.mbenv  ..\samples\SmokeTest.mbproj</Debugger_RunParams>
+        <Debugger_RunParams>h:\RAZVOJ\OmniThreadLibrary-v4\unittests\SmokeTest.mbenv  h:\RAZVOJ\OmniThreadLIbrary-v4\unittests\SmokeTest.mbproj </Debugger_RunParams>
         <DCC_DcuOutput>..\bin\dcu</DCC_DcuOutput>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
@@ -144,6 +144,10 @@
         </DCCReference>
         <DCCReference Include="MultiBuilder.Editor.Project.pas">
             <Form>frmEditProject</Form>
+        </DCCReference>
+        <DCCReference Include="MultiBuilder.About.pas">
+            <Form>frmAbout</Form>
+            <FormType>fmx</FormType>
         </DCCReference>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>

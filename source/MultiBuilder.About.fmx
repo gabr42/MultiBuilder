@@ -1,0 +1,155 @@
+object frmAbout: TfrmAbout
+  Left = 0
+  Top = 0
+  Caption = 'Form1'
+  ClientHeight = 187
+  ClientWidth = 501
+  Position = MainFormCenter
+  StyleBook = frmMultiBuilderMain.StyleBook1
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  DesignerMasterStyle = 0
+  object btnOK: TButton
+    Cancel = True
+    Default = True
+    ModalResult = 1
+    Position.X = 210.000000000000000000
+    Position.Y = 144.000000000000000000
+    TabOrder = 0
+    Text = 'OK'
+  end
+  object Label1: TLabel
+    StyledSettings = [Family, Style, FontColor]
+    Position.X = 16.000000000000000000
+    Position.Y = 24.000000000000000000
+    Size.Width = 201.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Size = 16.000000000000000000
+    Text = 'MultiBuilder was written by '
+    TabOrder = 10
+  end
+  object lblPG: TLabel
+    Cursor = crHandPoint
+    StyledSettings = [Family, FontColor]
+    HitTest = True
+    Position.X = 213.000000000000000000
+    Position.Y = 24.000000000000000000
+    Size.Width = 201.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Size = 16.000000000000000000
+    TextSettings.Font.StyleExt = {04040000000000000004000000}
+    Text = 'Primo'#382' Gabrijel'#269'i'#269
+    TabOrder = 8
+    OnClick = OpenURL
+  end
+  object Label2: TLabel
+    StyledSettings = [Family, Style, FontColor]
+    Position.X = 16.000000000000000000
+    Position.Y = 56.000000000000000000
+    Size.Width = 273.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Size = 16.000000000000000000
+    Text = 'Fresh version can always be found on'
+    TabOrder = 9
+  end
+  object lblGitHub: TLabel
+    Cursor = crHandPoint
+    StyledSettings = [Family, FontColor]
+    HitTest = True
+    Position.X = 286.000000000000000000
+    Position.Y = 56.000000000000000000
+    Size.Width = 201.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Size = 16.000000000000000000
+    TextSettings.Font.StyleExt = {04040000000000000004000000}
+    Text = 'GitHub'
+    TabOrder = 6
+    OnClick = OpenURL
+  end
+  object lblSoodesign: TLabel
+    Cursor = crHandPoint
+    StyledSettings = [Family, FontColor]
+    HitTest = True
+    Position.X = 126.000000000000000000
+    Position.Y = 88.000000000000000000
+    Size.Width = 78.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Size = 16.000000000000000000
+    TextSettings.Font.StyleExt = {04040000000000000004000000}
+    Text = 'Soodesign'
+    TabOrder = 3
+    OnClick = OpenURL
+  end
+  object Label4: TLabel
+    StyledSettings = [Family, Style, FontColor]
+    Position.X = 16.000000000000000000
+    Position.Y = 88.000000000000000000
+    Size.Width = 108.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Size = 16.000000000000000000
+    Text = 'Icons made by'
+    TabOrder = 7
+  end
+  object lblFlaticon: TLabel
+    Cursor = crHandPoint
+    StyledSettings = [Family, FontColor]
+    HitTest = True
+    Position.X = 246.000000000000000000
+    Position.Y = 88.000000000000000000
+    Size.Width = 67.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Size = 16.000000000000000000
+    TextSettings.Font.StyleExt = {04040000000000000004000000}
+    Text = 'Flaticon'
+    TabOrder = 2
+    OnClick = OpenURL
+  end
+  object Label5: TLabel
+    StyledSettings = [Family, Style, FontColor]
+    Position.X = 206.000000000000000000
+    Position.Y = 88.000000000000000000
+    Size.Width = 35.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Size = 16.000000000000000000
+    Text = 'from'
+    TabOrder = 5
+  end
+  object Label3: TLabel
+    StyledSettings = [Family, Style, FontColor]
+    Position.X = 306.000000000000000000
+    Position.Y = 88.000000000000000000
+    Size.Width = 119.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Size = 16.000000000000000000
+    Text = 'are licenced by'
+    TabOrder = 4
+  end
+  object lblCC30: TLabel
+    Cursor = crHandPoint
+    StyledSettings = [Family, FontColor]
+    Hint = 'Creative Commons BY 3.0'
+    HitTest = True
+    Position.X = 418.000000000000000000
+    Position.Y = 88.000000000000000000
+    Size.Width = 67.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Size = 16.000000000000000000
+    TextSettings.Font.StyleExt = {04040000000000000004000000}
+    Text = 'CC 3.0 BY'
+    ParentShowHint = False
+    ShowHint = True
+    TabOrder = 1
+    OnClick = OpenURL
+  end
+end

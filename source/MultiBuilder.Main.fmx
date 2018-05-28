@@ -3,7 +3,7 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
   Top = 0
   Caption = 'MultiBuilder'
   ClientHeight = 632
-  ClientWidth = 833
+  ClientWidth = 941
   StyleBook = StyleBook1
   FormFactor.Width = 320
   FormFactor.Height = 480
@@ -13,7 +13,7 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
   DesignerMasterStyle = 0
   object Toolbar: TPanel
     Align = MostTop
-    Size.Width = 833.000000000000000000
+    Size.Width = 941.000000000000000000
     Size.Height = 97.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 1
@@ -79,7 +79,7 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
       Size.Width = 97.000000000000000000
       Size.Height = 78.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 5
+      TabOrder = 6
       TextSettings.WordWrap = True
       ParentShowHint = False
       ShowHint = True
@@ -95,6 +95,21 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
       Size.PlatformDefault = False
       TabOrder = 0
       TextSettings.WordWrap = True
+    end
+    object tbAbout: TButton
+      Default = True
+      Hint = 'Run selected environment'
+      Position.X = 784.000000000000000000
+      Position.Y = 11.000000000000000000
+      Size.Width = 97.000000000000000000
+      Size.Height = 78.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 5
+      Text = 'About'
+      TextSettings.WordWrap = True
+      ParentShowHint = False
+      ShowHint = True
+      OnClick = tbAboutClick
     end
   end
   object StyleBook1: TStyleBook
@@ -3214,8 +3229,8 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
     DefaultItemStyles.GroupHeaderStyle = ''
     DefaultItemStyles.GroupFooterStyle = ''
     OnChange = lbEnvironmentsChange
-    Viewport.Width = 125.000000000000000000
-    Viewport.Height = 531.000000000000000000
+    Viewport.Width = 129.000000000000000000
+    Viewport.Height = 535.000000000000000000
   end
   object OpenProject: TOpenDialog
     Filter = 'MultiBuilder project file|*$(mbproj)|Any file|*.*'
@@ -3233,12 +3248,12 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
     Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
     DataDetectorTypes = []
     Align = Client
-    Size.Width = 704.000000000000000000
+    Size.Width = 812.000000000000000000
     Size.Height = 513.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 9
-    Viewport.Width = 700.000000000000000000
-    Viewport.Height = 509.000000000000000000
+    Viewport.Width = 812.000000000000000000
+    Viewport.Height = 513.000000000000000000
   end
   object SaveEnvironment: TSaveDialog
     Filter = 'MultiBuilder environment file|*$(mbenv)|Any file|*.*'
@@ -3256,7 +3271,7 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
     Align = Top
     Position.X = 129.000000000000000000
     Position.Y = 97.000000000000000000
-    Size.Width = 704.000000000000000000
+    Size.Width = 812.000000000000000000
     Size.Height = 22.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 16

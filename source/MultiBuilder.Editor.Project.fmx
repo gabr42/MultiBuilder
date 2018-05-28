@@ -4,6 +4,7 @@ object frmEditProject: TfrmEditProject
   Caption = 'Form1'
   ClientHeight = 480
   ClientWidth = 640
+  Position = OwnerFormCenter
   StyleBook = frmMultiBuilderMain.StyleBook1
   FormFactor.Width = 320
   FormFactor.Height = 480

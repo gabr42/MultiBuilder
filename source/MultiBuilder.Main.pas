@@ -42,6 +42,7 @@ type
     actEditEnvironment: TAction;
     actLoadProject: TAction;
     actEditProject: TAction;
+    tbAbout: TButton;
     procedure actEditEnvironmentExecute(Sender: TObject);
     procedure actEditProjectExecute(Sender: TObject);
     procedure actLoadEnvironmentExecute(Sender: TObject);
@@ -55,6 +56,7 @@ type
     procedure FormDestroy(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure lbEnvironmentsChange(Sender: TObject);
+    procedure tbAboutClick(Sender: TObject);
   private
   const
     CMarkOK      = #$2611;
@@ -87,7 +89,8 @@ implementation
 
 uses
   MultiBuilder.Platform, MultiBuilder.Engine,
-  MultiBuilder.Editor.Project, MultiBuilder.Editor.Environment;
+  MultiBuilder.Editor.Project, MultiBuilder.Editor.Environment,
+  MultiBuilder.About;
 
 {$R *.fmx}
 
@@ -422,6 +425,16 @@ begin
     Caption := 'MultiBuilder';
     FEngine.ClearProject;
   end;
+end;
+
+procedure TfrmMultiBuilderMain.tbAboutClick(Sender: TObject);
+var
+  frmAbout: TfrmAbout;
+begin
+  frmAbout := TfrmAbout.Create(Self);
+  try
+    frmAbout.ShowModal;
+  finally FreeAndNil(frmAbout); end;
 end;
 
 { TProjectResult }
