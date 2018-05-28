@@ -1,7 +1,7 @@
 object frmEditEnvironment: TfrmEditEnvironment
   Left = 0
   Top = 0
-  Caption = 'Form1'
+  Caption = 'Edit Environment'
   ClientHeight = 480
   ClientWidth = 640
   Position = OwnerFormCenter

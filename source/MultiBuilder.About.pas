@@ -22,9 +22,7 @@ type
     lblCC30: TLabel;
     procedure OpenURL(Sender: TObject);
   private
-    { Private declarations }
   public
-    { Public declarations }
   end;
 
 var

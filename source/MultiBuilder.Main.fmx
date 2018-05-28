@@ -43,7 +43,6 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
     end
     object tbEditProject: TButton
       Action = actEditProject
-      Cancel = True
       Enabled = True
       ImageIndex = -1
       Position.X = 384.000000000000000000
@@ -3229,8 +3228,8 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
     DefaultItemStyles.GroupHeaderStyle = ''
     DefaultItemStyles.GroupFooterStyle = ''
     OnChange = lbEnvironmentsChange
-    Viewport.Width = 129.000000000000000000
-    Viewport.Height = 535.000000000000000000
+    Viewport.Width = 125.000000000000000000
+    Viewport.Height = 531.000000000000000000
   end
   object OpenProject: TOpenDialog
     Filter = 'MultiBuilder project file|*$(mbproj)|Any file|*.*'
@@ -3252,8 +3251,8 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
     Size.Height = 513.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 9
-    Viewport.Width = 812.000000000000000000
-    Viewport.Height = 513.000000000000000000
+    Viewport.Width = 808.000000000000000000
+    Viewport.Height = 509.000000000000000000
   end
   object SaveEnvironment: TSaveDialog
     Filter = 'MultiBuilder environment file|*$(mbenv)|Any file|*.*'

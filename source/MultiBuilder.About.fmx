@@ -1,8 +1,9 @@
 object frmAbout: TfrmAbout
   Left = 0
   Top = 0
-  Caption = 'Form1'
-  ClientHeight = 187
+  BorderStyle = None
+  Caption = 'About'
+  ClientHeight = 147
   ClientWidth = 501
   Position = MainFormCenter
   StyleBook = frmMultiBuilderMain.StyleBook1
@@ -27,14 +28,14 @@ object frmAbout: TfrmAbout
     Size.Height = 17.000000000000000000
     Size.PlatformDefault = False
     TextSettings.Font.Size = 16.000000000000000000
-    Text = 'MultiBuilder was written by '
+    Text = 'MultiBuilder is written by '
     TabOrder = 10
   end
   object lblPG: TLabel
     Cursor = crHandPoint
     StyledSettings = [Family, FontColor]
     HitTest = True
-    Position.X = 213.000000000000000000
+    Position.X = 199.000000000000000000
     Position.Y = 24.000000000000000000
     Size.Width = 201.000000000000000000
     Size.Height = 17.000000000000000000

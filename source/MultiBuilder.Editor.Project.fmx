@@ -1,7 +1,7 @@
 object frmEditProject: TfrmEditProject
   Left = 0
   Top = 0
-  Caption = 'Form1'
+  Caption = 'Edit Project'
   ClientHeight = 480
   ClientWidth = 640
   Position = OwnerFormCenter
