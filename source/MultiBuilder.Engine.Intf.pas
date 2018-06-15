@@ -7,9 +7,10 @@ uses
 
 type
   TExecuteResult = record
-    Command : string;
-    ExitCode: integer;
-    Output  : string;
+    Command   : string;
+    ExitCode  : integer;
+    Output    : string;
+    Elapsed_ms: int64;
     constructor Create(const ACommand: string; AExitCode: integer; const AOutput: string);
   end;
 
@@ -47,6 +48,7 @@ begin
   Command := ACommand;
   ExitCode := AExitCode;
   Output := AOutput;
+  Elapsed_ms := 0;
 end;
 
 end.

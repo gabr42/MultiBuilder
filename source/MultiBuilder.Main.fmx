@@ -3219,7 +3219,7 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
   object lbEnvironments: TListBox
     Align = MostLeft
     Position.Y = 97.000000000000000000
-    Size.Width = 129.000000000000000000
+    Size.Width = 177.000000000000000000
     Size.Height = 535.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 3
@@ -3228,8 +3228,8 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
     DefaultItemStyles.GroupHeaderStyle = ''
     DefaultItemStyles.GroupFooterStyle = ''
     OnChange = lbEnvironmentsChange
-    Viewport.Width = 125.000000000000000000
-    Viewport.Height = 531.000000000000000000
+    Viewport.Width = 177.000000000000000000
+    Viewport.Height = 535.000000000000000000
   end
   object OpenProject: TOpenDialog
     Filter = 'MultiBuilder project file|*$(mbproj)|Any file|*.*'
@@ -3247,12 +3247,12 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
     Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
     DataDetectorTypes = []
     Align = Client
-    Size.Width = 812.000000000000000000
+    Size.Width = 763.000000000000000000
     Size.Height = 513.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 9
-    Viewport.Width = 808.000000000000000000
-    Viewport.Height = 509.000000000000000000
+    Viewport.Width = 763.000000000000000000
+    Viewport.Height = 513.000000000000000000
   end
   object SaveEnvironment: TSaveDialog
     Filter = 'MultiBuilder environment file|*$(mbenv)|Any file|*.*'
@@ -3268,13 +3268,24 @@ object frmMultiBuilderMain: TfrmMultiBuilderMain
   end
   object cbxCommands: TComboBox
     Align = Top
-    Position.X = 129.000000000000000000
+    Position.X = 178.000000000000000000
     Position.Y = 97.000000000000000000
-    Size.Width = 812.000000000000000000
+    Size.Width = 763.000000000000000000
     Size.Height = 22.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 16
     OnChange = cbxCommandsChange
+  end
+  object Splitter1: TSplitter
+    Align = MostLeft
+    Cursor = crHSplit
+    MinSize = 20.000000000000000000
+    Position.X = 177.000000000000000000
+    Position.Y = 97.000000000000000000
+    ShowGrip = False
+    Size.Width = 1.000000000000000000
+    Size.Height = 535.000000000000000000
+    Size.PlatformDefault = False
   end
   object ActionList1: TActionList
     Left = 496

@@ -4,7 +4,7 @@ interface
 
 uses
   System.SysUtils, System.Types, System.UITypes, System.Actions, System.Classes,
-  System.Variants, System.Generics.Defaults, System.Generics.Collections,
+  System.Variants, System.Generics.Defaults, System.Generics.Collections, System.Diagnostics,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs,
   FMX.Controls.Presentation, FMX.StdCtrls, FMX.Layouts, FMX.ListBox, FMX.ActnList,
   FMX.ScrollBox, FMX.Memo,
@@ -12,10 +12,13 @@ uses
 
 type
   TProjectResult = record
-    CommandResults: TArray<TExecuteResult>;
-    Completed     : boolean;
+    CommandResults : TArray<TExecuteResult>;
+    Completed      : boolean;
+    ProjectStart_ms: int64;
+    Stopwatch      : TStopwatch;
     constructor Create(ACompleted: boolean);
     procedure AppendCommandResult(result: TExecuteResult);
+    function ElapsedStr: string;
     function  FindFirstError: integer;
   end;
 
@@ -43,6 +46,7 @@ type
     actLoadProject: TAction;
     actEditProject: TAction;
     tbAbout: TButton;
+    Splitter1: TSplitter;
     procedure actEditEnvironmentExecute(Sender: TObject);
     procedure actEditProjectExecute(Sender: TObject);
     procedure actLoadEnvironmentExecute(Sender: TObject);
@@ -96,6 +100,7 @@ uses
 
 type
   TExecuteResultHelper = record helper for TExecuteResult
+    function ElapsedStr: string;
     function ExitCodeStr: string;
   end;
 
@@ -235,15 +240,20 @@ begin
     outLog.Text := 'No results yes'
   else begin
     cmdResult := projectResult.CommandResults[cbxCommands.ItemIndex];
-    outLog.Text := cmdResult.Output
+    outLog.Text := cmdResult.Output;
   end;
 end;
 
 function TfrmMultiBuilderMain.CleanEnvironment(const environment: string): string;
+var
+  p: integer;
 begin
   Result := environment;
   if (Result <> '') and ((Result[1] = CMarkOK) or (Result[1] = CMarkError) or (Result[1] = CMarkRunning)) then
     Delete(Result, 1, 2);
+  p := Pos('[', Result);
+  if p > 0 then
+    Delete(Result, p - 1, Length(Result) - p + 2);
 end;
 
 procedure TfrmMultiBuilderMain.EnableWhenNoJobs(Sender: TObject);
@@ -319,7 +329,7 @@ begin
     cbxCommands.Items.Clear;
     outLog.Text := '';
     for cmdRes in result.CommandResults do
-      cbxCommands.Items.Add(Format('[%s] %s', [cmdRes.ExitCodeStr, cmdRes.Command]));
+      cbxCommands.Items.Add(Format('[%s] %s %s', [cmdRes.ExitCodeStr, cmdRes.ElapsedStr, cmdRes.Command]));
     if cbxCommands.Items.Count > 0 then
       cbxCommands.ItemIndex := 0;
   end;
@@ -331,12 +341,12 @@ var
   cmdRes    : TExecuteResult;
   projectRes: TProjectResult;
 begin
-  if not FResults.TryGetValue(environment, projectRes) then begin
-    projectRes := Default(TProjectResult);
-    projectRes.Completed := false;
-  end;
+  if not FResults.TryGetValue(environment, projectRes) then
+    raise Exception.CreateFmt('MarkCommandDone: Environment %s not found in results dictionary', [environment]);
   cmdRes := result;
-  projectRes.AppendCommandResult(result);
+  cmdRes.Elapsed_ms := projectRes.Stopwatch.ElapsedMilliseconds - projectRes.ProjectStart_ms;
+  projectRes.AppendCommandResult(cmdRes);
+  projectRes.ProjectStart_ms := projectRes.Stopwatch.ElapsedMilliseconds;
   FResults.AddOrSetValue(environment, projectRes);
 end;
 
@@ -354,9 +364,9 @@ begin
   else if not result.Completed then
     lbEnvironments.Items[idx] := CMarkRunning + ' ' + environment
   else if result.FindFirstError < 0 then
-    lbEnvironments.Items[idx] := CMarkOK + ' ' + environment
+    lbEnvironments.Items[idx] := CMarkOK + ' ' + environment + ' ' + result.ElapsedStr
   else
-    lbEnvironments.Items[idx] := CMarkError + ' ' + environment;
+    lbEnvironments.Items[idx] := CMarkError + ' ' + environment + ' ' + result.ElapsedStr;
 end;
 
 procedure TfrmMultiBuilderMain.MarkJobDone(const environment: string;
@@ -365,8 +375,10 @@ var
   projectRes: TProjectResult;
 begin
   if not FResults.TryGetValue(environment, projectRes) then
-    projectRes.CommandResults := TArray<TExecuteResult>.Create(result);
+    raise Exception.CreateFmt('MarkJobDone: Environment %s not found in results dictionary', [environment]);
+
   projectRes.Completed := true;
+  projectRes.Stopwatch.Stop;
   FResults.AddOrSetValue(environment, projectRes);
 
   MarkEnvironment(environment);
@@ -443,12 +455,18 @@ constructor TProjectResult.Create(ACompleted: boolean);
 begin
   Completed := ACompleted;
   SetLength(CommandResults, 0);
+  Stopwatch := TStopwatch.StartNew;
 end;
 
 procedure TProjectResult.AppendCommandResult(result: TExecuteResult);
 begin
   SetLength(CommandResults, Length(CommandResults) + 1);
   CommandResults[High(CommandResults)] := result;
+end;
+
+function TProjectResult.ElapsedStr: string;
+begin
+  Result := FormatDateTime('[hh:nn:ss.zzz]', Stopwatch.ElapsedMilliseconds / MSecsPerDay);
 end;
 
 function TProjectResult.FindFirstError: integer;
@@ -461,6 +479,11 @@ begin
 end;
 
 { TExecuteResultHelper }
+
+function TExecuteResultHelper.ElapsedStr: string;
+begin
+  Result := FormatDateTime('[hh:mm:ss.zzz]', Elapsed_ms / MSecsPerDay);
+end;
 
 function TExecuteResultHelper.ExitCodeStr: string;
 begin
